@@ -1,4 +1,18 @@
-# cloakFetch
+# cloakFetch — pass Cloudflare-protected URLs through Claude Code 🛡️
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![GitHub stars](https://img.shields.io/github/stars/Agents365-ai/cloakFetch?style=flat&logo=github)](https://github.com/Agents365-ai/cloakFetch/stargazers)
+[![GitHub forks](https://img.shields.io/github/forks/Agents365-ai/cloakFetch?style=flat&logo=github)](https://github.com/Agents365-ai/cloakFetch/network/members)
+[![Latest Release](https://img.shields.io/github/v/release/Agents365-ai/cloakFetch?logo=github)](https://github.com/Agents365-ai/cloakFetch/releases/latest)
+[![Last Commit](https://img.shields.io/github/last-commit/Agents365-ai/cloakFetch?logo=github)](https://github.com/Agents365-ai/cloakFetch/commits/main)
+
+[![Claude Code Hook](https://img.shields.io/badge/Claude%20Code-PostToolUse%20hook-8a2be2)](https://docs.claude.com/en/docs/claude-code/hooks)
+[![Agent Skills](https://img.shields.io/badge/Agent%20Skills-compatible-2ea44f)](https://agentskills.io)
+[![Discord](https://img.shields.io/badge/Discord-Join-5865F2?logo=discord&logoColor=white)](https://discord.gg/79JF5Atuk)
+
+**English** · [中文](README_CN.md)
+
+External references: [CloakBrowser](https://github.com/CloakHQ/CloakBrowser) · [defuddle](https://github.com/kepano/defuddle) · [Claude Code hooks](https://docs.claude.com/en/docs/claude-code/hooks)
 
 Two paths for the same idea: when a web fetch is blocked by [Cloudflare](https://www.cloudflare.com/) (or similar bot protection), route the URL through [CloakBrowser](https://github.com/CloakHQ/CloakBrowser) — a stealth Chromium that passes the JS challenge — and return clean markdown via [defuddle](https://github.com/kepano/defuddle).
 
@@ -240,6 +254,51 @@ Inside `skills/cloak-fetch/cloak_fetch.py`:
 - `additionalContext` size is bounded by Claude Code's hook output handling — very large pages are persisted to disk and only previewed inline (the persisted file path is shown so the agent can `Read` it).
 - The skill is **reactive**: it works only when the agent recognises the failure and recalls the skill. If the agent gives up after the first 403 without trying again, the skill doesn't help. The SKILL.md description is intentionally pushy to combat this — review and tweak if your agent under-triggers.
 
-## License
+## 💬 Community
 
-MIT
+- **Discord:** https://discord.gg/79JF5Atuk
+- **WeChat:** scan the QR code below
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/Agents365-ai/images_payment/main/qrcode/agents365ai_wechat_1.png" width="200" alt="WeChat Community Group">
+</p>
+
+## ❤️ Support
+
+If cloakFetch saves you from one more "HTTP 403 Forbidden", consider supporting the author:
+
+<table>
+  <tr>
+    <td align="center">
+      <img src="https://raw.githubusercontent.com/Agents365-ai/images_payment/main/qrcode/wechat-pay.png" width="180" alt="WeChat Pay">
+      <br>
+      <b>WeChat Pay</b>
+    </td>
+    <td align="center">
+      <img src="https://raw.githubusercontent.com/Agents365-ai/images_payment/main/qrcode/alipay.png" width="180" alt="Alipay">
+      <br>
+      <b>Alipay</b>
+    </td>
+    <td align="center">
+      <img src="https://raw.githubusercontent.com/Agents365-ai/images_payment/main/qrcode/buymeacoffee.png" width="180" alt="Buy Me a Coffee">
+      <br>
+      <b>Buy Me a Coffee</b>
+    </td>
+    <td align="center">
+      <img src="https://raw.githubusercontent.com/Agents365-ai/images_payment/main/awarding/award.gif" width="180" alt="Give a Reward">
+      <br>
+      <b>Give a Reward</b>
+    </td>
+  </tr>
+</table>
+
+## 👤 Author
+
+**Agents365-ai**
+
+- GitHub: https://github.com/Agents365-ai
+- Bilibili: https://space.bilibili.com/441831884
+
+## 📄 License
+
+[MIT](LICENSE)
