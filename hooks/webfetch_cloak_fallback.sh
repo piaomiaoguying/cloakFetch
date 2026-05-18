@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-# PostToolUse hook: when WebFetch fails with a Cloudflare/bot-block pattern,
-# transparently retry with CloakBrowser + defuddle and inject the markdown back
-# as additionalContext.
+# PostToolUse hook: when WebFetch fails with a WAF / bot-protection pattern
+# (Cloudflare, DataDome, Akamai, PerimeterX/HUMAN, Imperva, F5/Distil, Kasada,
+# AWS WAF, Sucuri, etc.), transparently retry with CloakBrowser + defuddle and
+# inject the markdown back as additionalContext.
 #
 # Reads hook payload as JSON on stdin:
 #   { "tool_name": "WebFetch",
@@ -24,7 +25,12 @@ if [ ! -x "$CLOAK_PY" ]; then
   CLOAK_PY="$(command -v python3 2>/dev/null)"
 fi
 
-FAILURE_REGEX="403|forbidden|cloudflare|just a moment|resource was not loaded|access denied|blocked"
+# Matched case-insensitively against tool_response. Covers the major bot /
+# WAF vendors — adding niche brand names (datadome, akamai, sucuri etc.) is
+# safe because they rarely appear in legitimate page content, but is a real
+# trigger when the upstream block page mentions them. Status codes 403/429
+# catch the common rate-limit / forbidden envelope.
+FAILURE_REGEX="403|429|forbidden|cloudflare|just a moment|enable javascript and cookies|resource was not loaded|access denied|blocked|datadome|akamai|please verify you are a human|incapsula|pardon our interruption|kasada|aws-waf|sucuri"
 
 # Read full payload
 payload=$(cat)
@@ -75,7 +81,7 @@ fi
 
 # Emit additionalContext so Claude sees the fallback content.
 md_body=$(cat "$tmp_md")
-context=$(printf 'WebFetch was blocked by Cloudflare/bot-protection for %s.\nFallback CloakBrowser fetch succeeded. Page content (clean markdown via defuddle) follows:\n\n---\n\n%s' "$url" "$md_body")
+context=$(printf 'WebFetch was blocked by bot-protection / WAF for %s.\nFallback CloakBrowser fetch succeeded. Page content (clean markdown via defuddle) follows:\n\n---\n\n%s' "$url" "$md_body")
 
 jq -n --arg ctx "$context" '{
   "hookSpecificOutput": {

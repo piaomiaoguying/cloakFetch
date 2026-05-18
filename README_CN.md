@@ -169,7 +169,7 @@ echo '{
 |---|---|---|
 | `CLOAK_FETCH` | `$HOME/.claude/hooks/cloak_fetch.py` | Python 抓取脚本路径。可用同名环境变量覆盖。 |
 | `CLOAKBROWSER_PYTHON` | `$HOME/github/CloakBrowser/.venv/bin/python` → `python3` | 跑抓取脚本的 Python 解释器。必须能 import `cloakbrowser`。 |
-| `FAILURE_REGEX` | `403\|forbidden\|cloudflare\|just a moment\|resource was not loaded\|access denied\|blocked` | 大小写不敏感、针对 `tool_response` 的正则。按需放宽或收紧。 |
+| `FAILURE_REGEX` | `403\|429\|forbidden\|cloudflare\|just a moment\|enable javascript and cookies\|resource was not loaded\|access denied\|blocked\|datadome\|akamai\|please verify you are a human\|incapsula\|pardon our interruption\|kasada\|aws-waf\|sucuri` | 大小写不敏感、针对 `tool_response` 的正则。覆盖 Cloudflare 加主流 bot 防护厂商。按需放宽或收紧。 |
 
 ---
 

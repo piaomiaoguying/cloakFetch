@@ -169,7 +169,7 @@ Inside `hooks/webfetch_cloak_fallback.sh`:
 |---|---|---|
 | `CLOAK_FETCH` | `$HOME/.claude/hooks/cloak_fetch.py` | Path to the Python fetcher. Override with an env var of the same name. |
 | `CLOAKBROWSER_PYTHON` | `$HOME/github/CloakBrowser/.venv/bin/python` → `python3` | Python interpreter that runs the fetcher. Must have `cloakbrowser` importable. |
-| `FAILURE_REGEX` | `403\|forbidden\|cloudflare\|just a moment\|resource was not loaded\|access denied\|blocked` | Case-insensitive regex against `tool_response`. Widen / narrow to taste. |
+| `FAILURE_REGEX` | `403\|429\|forbidden\|cloudflare\|just a moment\|enable javascript and cookies\|resource was not loaded\|access denied\|blocked\|datadome\|akamai\|please verify you are a human\|incapsula\|pardon our interruption\|kasada\|aws-waf\|sucuri` | Case-insensitive regex against `tool_response`. Covers Cloudflare + the major bot-protection vendors. Widen / narrow to taste. |
 
 ---
 
