@@ -119,6 +119,18 @@ chmod +x ~/.claude/hooks/cloak_fetch.py ~/.claude/hooks/webfetch_cloak_fallback.
 
 The hook becomes active on the next tool call — no Claude Code restart required.
 
+#### Tip — symlink instead of copy
+
+If you keep this repo as a git checkout (recommended), symlink the hook files into `~/.claude/hooks/` instead of copying them. Edits in the repo are then live immediately, and `git pull` updates your hooks:
+
+```bash
+mkdir -p ~/.claude/hooks
+ln -sf "$(pwd)/hooks/cloak_fetch.py"             ~/.claude/hooks/cloak_fetch.py
+ln -sf "$(pwd)/hooks/webfetch_cloak_fallback.sh" ~/.claude/hooks/webfetch_cloak_fallback.sh
+```
+
+Tradeoff: if you move or delete the repo checkout, the hook silently stops firing (the script's `[ ! -f "$CLOAK_FETCH" ]` check trips and exits 0). For a stable checkout under `~/github/`, that's a fine bet.
+
 ### Test (hook)
 
 Simulate the harness by piping a fake failed-WebFetch payload to the hook:
