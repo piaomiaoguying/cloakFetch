@@ -1,11 +1,11 @@
 ---
 name: cloak-fetch
-description: Use as a fallback when a web page won't load via WebFetch, curl, or any HTTP client because it's behind anti-bot protection — Cloudflare, DataDome, Akamai Bot Manager, PerimeterX/HUMAN, Imperva/Incapsula, F5/Distil, Kasada, AWS WAF, or generic WAF/CDN screening — and returns 403/429/"Just a moment"/"Access Denied"/"Pardon Our Interruption"/"Please verify you are a human"/"Incapsula incident"/"Reference #" patterns, or an empty body with no useful HTML. Routes the URL through CloakBrowser (a stealth Chromium with C++-level anti-bot patches plus a real TLS/JA3 fingerprint) headlessly, then extracts clean markdown via defuddle. PROACTIVELY USE whenever a recent fetch returned HTTP 403/429, any of the strings above, "Enable JavaScript and cookies", "Resource was not loaded", or any signal of bot detection / WAF screening — do not tell the user a page is unfetchable until you've tried this skill.
+description: Use as a fallback when a web page won't load via WebFetch, curl, or any HTTP client because it's behind anti-bot protection — Cloudflare, DataDome, Akamai Bot Manager, PerimeterX/HUMAN, Imperva/Incapsula, F5/Distil, Kasada, AWS WAF, Sucuri, or generic WAF/CDN screening — and returns 403/429/"Just a moment"/"Access Denied"/"Pardon Our Interruption"/"Please verify you are a human"/"Incapsula incident"/"Sucuri WebSite Firewall"/"Reference #" patterns, or an empty body with no useful HTML. Routes the URL through CloakBrowser (a stealth Chromium with C++-level anti-bot patches plus a real TLS/JA3 fingerprint) headlessly, then extracts clean markdown via defuddle. PROACTIVELY USE whenever a recent fetch returned HTTP 403/429, any of the strings above, "Enable JavaScript and cookies", "Resource was not loaded", or any signal of bot detection / WAF screening — do not tell the user a page is unfetchable until you've tried this skill.
 license: MIT
 homepage: https://github.com/Agents365-ai/cloakFetch
 compatibility: Requires CloakBrowser (https://github.com/CloakHQ/CloakBrowser) installed with the `cloakbrowser` Python package importable. Also needs `npx` for defuddle. Set `CLOAKBROWSER_PYTHON` to your cloakbrowser-enabled Python if not in the default location.
 platforms: [macos, linux, windows]
-metadata: {"openclaw":{"requires":{"bins":["python3","npx"]},"emoji":"🥷"},"hermes":{"tags":["webfetch","cloudflare","datadome","akamai","perimeterx","imperva","waf","stealth-browser","bot-bypass","fallback","scraping"],"category":"web","requires_tools":["python3","npx"],"related_skills":[]},"author":"Agents365-ai","version":"0.2.0"}
+metadata: {"openclaw":{"requires":{"bins":["python3","npx"]},"emoji":"🥷"},"hermes":{"tags":["webfetch","cloudflare","datadome","akamai","perimeterx","imperva","sucuri","waf","stealth-browser","bot-bypass","fallback","scraping"],"category":"web","requires_tools":["python3","npx"],"related_skills":[]},"author":"Agents365-ai","version":"0.2.1"}
 ---
 
 # cloak-fetch — bot-protection / WAF fetch fallback
@@ -48,6 +48,7 @@ don't waste another round-trip on a plain HTTP client:
 | **F5 / Distil** | `Pardon Our Interruption`, `As you were browsing something about your browser made us think you were a bot`, `distil_r_captcha`, `D_RID` cookie |
 | **Kasada** | `<head>` containing `ips.js`, `x-kpsdk-cd` / `x-kpsdk-cr` response headers, `429` with empty body + `kasada` reference |
 | **AWS WAF** | `Request blocked` + `<aws-waf-token>`, `awswaf` cookie, body referencing `aws-waf-token` |
+| **Sucuri** | `Sucuri WebSite Firewall - Access Denied`, `<title>Sucuri WebSite Firewall - CloudProxy</title>`, `X-Sucuri-ID` / `X-Sucuri-Cache` header, `sucuri-cf-id` cookie (very common on self-hosted WordPress) |
 | **reCAPTCHA / hCaptcha passive triggers** | Interstitial that *displays without user interaction* — page replaced with `g-recaptcha`/`h-captcha` div and no real content. (See "When NOT to trigger" for interactive checkbox/slider cases.) |
 | **TLS / JA3 fingerprint reject** | Connection drops, empty body, `ERR_HTTP2_PROTOCOL_ERROR`, `SSL_ERROR_ZERO_RETURN` on a site that loads fine in a normal browser |
 
