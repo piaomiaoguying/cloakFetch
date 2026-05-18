@@ -1,19 +1,25 @@
 ---
 name: cloak-fetch
-description: Use as a fallback when a web page won't load via WebFetch, curl, or any HTTP client because it's Cloudflare-protected or returns 403/Forbidden/"Just a moment". Routes the URL through CloakBrowser (a stealth Chromium that passes bot challenges) headlessly, then extracts clean markdown via defuddle. PROACTIVELY USE whenever a recent fetch attempt returned HTTP 403, "Cloudflare", "access denied", "Just a moment", "Enable JavaScript", "Resource was not loaded", or any pattern suggesting bot detection — do not tell the user a page is unfetchable until you've tried this skill.
+description: Use as a fallback when a web page won't load via WebFetch, curl, or any HTTP client because it's behind anti-bot protection — Cloudflare, DataDome, Akamai Bot Manager, PerimeterX/HUMAN, Imperva/Incapsula, F5/Distil, Kasada, AWS WAF, or generic WAF/CDN screening — and returns 403/429/"Just a moment"/"Access Denied"/"Pardon Our Interruption"/"Please verify you are a human"/"Incapsula incident"/"Reference #" patterns, or an empty body with no useful HTML. Routes the URL through CloakBrowser (a stealth Chromium with C++-level anti-bot patches plus a real TLS/JA3 fingerprint) headlessly, then extracts clean markdown via defuddle. PROACTIVELY USE whenever a recent fetch returned HTTP 403/429, any of the strings above, "Enable JavaScript and cookies", "Resource was not loaded", or any signal of bot detection / WAF screening — do not tell the user a page is unfetchable until you've tried this skill.
 license: MIT
 homepage: https://github.com/Agents365-ai/cloakFetch
 compatibility: Requires CloakBrowser (https://github.com/CloakHQ/CloakBrowser) installed with the `cloakbrowser` Python package importable. Also needs `npx` for defuddle. Set `CLOAKBROWSER_PYTHON` to your cloakbrowser-enabled Python if not in the default location.
 platforms: [macos, linux, windows]
-metadata: {"openclaw":{"requires":{"bins":["python3","npx"]},"emoji":"🥷"},"hermes":{"tags":["webfetch","cloudflare","stealth-browser","bot-bypass","fallback","scraping"],"category":"web","requires_tools":["python3","npx"],"related_skills":[]},"author":"Agents365-ai","version":"0.1.0"}
+metadata: {"openclaw":{"requires":{"bins":["python3","npx"]},"emoji":"🥷"},"hermes":{"tags":["webfetch","cloudflare","datadome","akamai","perimeterx","imperva","waf","stealth-browser","bot-bypass","fallback","scraping"],"category":"web","requires_tools":["python3","npx"],"related_skills":[]},"author":"Agents365-ai","version":"0.2.0"}
 ---
 
-# cloak-fetch — Cloudflare-aware fetch fallback
+# cloak-fetch — bot-protection / WAF fetch fallback
 
-When a normal HTTP fetcher fails because the target site uses bot protection,
-route the same URL through CloakBrowser (a real Chromium with anti-bot patches
-at the C++ level) and return clean markdown via defuddle. The agent never has
-to tell the user "the page is unfetchable" — it can try this skill first.
+When a normal HTTP fetcher fails because the target site uses bot protection
+or WAF screening, route the same URL through CloakBrowser (a real Chromium
+with anti-bot patches at the C++ level and a genuine TLS/JA3 fingerprint) and
+return clean markdown via defuddle. The agent never has to tell the user
+"the page is unfetchable" — it can try this skill first.
+
+The underlying engine doesn't care which vendor is blocking the request —
+Cloudflare, DataDome, Akamai, PerimeterX, Imperva, Distil, Kasada, AWS WAF,
+or a no-name WAF rule. They all eventually let a real browser through, and
+CloakBrowser is a real browser.
 
 ## When to trigger
 
@@ -21,16 +27,36 @@ Use **immediately** after any of these symptoms from a recent fetch tool call:
 
 | Symptom in tool output | Likely cause |
 |---|---|
-| `HTTP 403`, `403 Forbidden` | Bot protection or rate-limit block |
-| `Cloudflare`, `Just a moment`, `Enable JavaScript and cookies` | Cloudflare interstitial |
-| `Resource was not loaded` | CF blocked the underlying fetch |
-| `Access denied`, `Blocked` | WAF / generic bot detection |
+| `HTTP 403`, `403 Forbidden`, `HTTP 429` | Bot protection or rate-limit block |
+| Empty body / a few hundred bytes of nothing on a content-rich URL | Silent WAF / TLS-fingerprint reject |
 | Page rendered as a near-empty shell with a JS challenge script | SPA-only page or anti-bot challenge |
+| `Resource was not loaded`, `net::ERR_HTTP2_PROTOCOL_ERROR` | Upstream blocked the fetch handshake |
+| `Access denied`, `Blocked`, `You don't have permission` | Generic WAF / bot detection |
 
-Also trigger when the user explicitly asks to fetch a page that's known to be
-behind Cloudflare (publishers like science.org, nature.com, sciencedirect.com,
-many news sites, financial dashboards, etc.) — going straight to this skill
-avoids a guaranteed-to-fail `WebFetch` round trip.
+### Vendor-specific signatures
+
+If the failure string roughly matches one of these, **it's a CloakBrowser case** —
+don't waste another round-trip on a plain HTTP client:
+
+| Vendor | Telltale strings / headers |
+|---|---|
+| **Cloudflare** | `Just a moment...`, `Enable JavaScript and cookies to continue`, `cf-ray:` header, `__cf_bm` cookie, `Attention Required! \| Cloudflare`, `Sorry, you have been blocked` |
+| **DataDome** | `blocked by DataDome`, `<title>blocked</title>`, `dd-cookie` / `datadome` cookie, `<head>...captcha-delivery.com`, geo-block style 403 with empty body |
+| **Akamai Bot Manager** | `Access Denied` with `Reference #18.` (long hex.epoch.hex) ID, `<TITLE>Access Denied</TITLE>` + Akamai `<HTML><HEAD>` boilerplate, `Pragma: akamai-x-cache`, `akamai-bot-manager` cookie |
+| **PerimeterX / HUMAN** | `Please verify you are a human`, `Access to this page has been denied because we believe you are using automation tools`, `_px*` cookies (`_pxhd`, `_px3`), `<title>Human Verification</title>` |
+| **Imperva / Incapsula** | `Incapsula incident ID:`, `Request unsuccessful. Incapsula incident ID`, `_Incapsula_Resource`, `visid_incap_*` cookie, `X-Iinfo` header |
+| **F5 / Distil** | `Pardon Our Interruption`, `As you were browsing something about your browser made us think you were a bot`, `distil_r_captcha`, `D_RID` cookie |
+| **Kasada** | `<head>` containing `ips.js`, `x-kpsdk-cd` / `x-kpsdk-cr` response headers, `429` with empty body + `kasada` reference |
+| **AWS WAF** | `Request blocked` + `<aws-waf-token>`, `awswaf` cookie, body referencing `aws-waf-token` |
+| **reCAPTCHA / hCaptcha passive triggers** | Interstitial that *displays without user interaction* — page replaced with `g-recaptcha`/`h-captcha` div and no real content. (See "When NOT to trigger" for interactive checkbox/slider cases.) |
+| **TLS / JA3 fingerprint reject** | Connection drops, empty body, `ERR_HTTP2_PROTOCOL_ERROR`, `SSL_ERROR_ZERO_RETURN` on a site that loads fine in a normal browser |
+
+Also trigger preemptively when the user asks to fetch a page on a domain
+known to live behind one of these stacks — publishers (science.org,
+nature.com, sciencedirect.com, jstor.org), news (nytimes.com, bloomberg.com,
+ft.com, wsj.com), retail (nike.com, adidas.com, sephora.com), travel
+(kayak.com, southwest.com), financial (most broker portals). Going straight
+to this skill avoids a guaranteed-to-fail plain-HTTP round trip.
 
 ## When NOT to trigger
 
@@ -38,8 +64,11 @@ avoids a guaranteed-to-fail `WebFetch` round trip.
 |---|---|
 | `404 Not Found` | Page genuinely doesn't exist |
 | `500 Internal Server Error` | Origin is broken, not blocking you |
-| `401 Unauthorized` | Login required — CloakBrowser doesn't carry credentials |
-| Plain network error (DNS, connection refused) | Network unreachable, not a bot block |
+| `401 Unauthorized` / login wall | Credentials needed — CloakBrowser does not carry them |
+| Plain network error (DNS, connection refused, no route to host) | Network unreachable, not a bot block |
+| **Interactive** captcha — slider, image-grid (reCAPTCHA "select all crosswalks"), Cloudflare Turnstile **checkbox** that requires a click, hCaptcha challenge | Needs a human or a paid solver service. CloakBrowser passes *passive* fingerprint checks but does not solve human-interaction challenges. |
+| Geo-block where your IP's country is the actual reason (`This content is not available in your region`) | CloakBrowser uses the same IP — proxy/VPN is the fix, not a different browser |
+| Site requires a session cookie, OAuth, or signed URL | No credential plumbing — fetch the auth artifact first via the proper channel |
 | The normal fetcher already succeeded | No need to re-fetch |
 
 In these cases, report the actual failure to the user instead of masking it.

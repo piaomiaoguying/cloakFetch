@@ -40,14 +40,16 @@ try:
             break
         time.sleep(1)
 
-    # Wait for some plausible content container — SPA pages render late.
+    # Wait briefly for an SPA content container. If none of these exist, the
+    # page is either a plain static doc or the site uses uncommon selectors —
+    # fall through to the time.sleep settle below in either case.
     try:
         page.wait_for_selector(
             "main, article, .article__body, .core-container, .pb-page-body",
-            timeout=15000,
+            timeout=5000,
         )
-    except Exception as e:
-        print(f"[cloak] content selector wait skipped: {e}", file=sys.stderr)
+    except Exception:
+        pass
 
     time.sleep(2)  # extra settle for late-loading JS chunks
 
