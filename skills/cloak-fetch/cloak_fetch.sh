@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # cloak-fetch wrapper: locate a Python with cloakbrowser, fetch the URL
-# headlessly via CloakBrowser, and emit clean markdown via defuddle.
+# headlessly via CloakBrowser, and emit clean markdown (trafilatura).
 #
 # Usage: cloak_fetch.sh <url>
 # Stdout: clean markdown extracted from the page.
@@ -37,18 +37,4 @@ if [ -z "$PY" ]; then
   exit 1
 fi
 
-TMP_HTML=$(mktemp -t cloak.XXXXXX.html) || exit 1
-trap 'rm -f "$TMP_HTML"' EXIT
-
-if ! "$PY" "$SCRIPT_DIR/cloak_fetch.py" "$URL" > "$TMP_HTML" 2>&2; then
-  echo "cloak-fetch: browser fetch failed for $URL" >&2
-  exit 1
-fi
-
-if [ ! -s "$TMP_HTML" ]; then
-  echo "cloak-fetch: browser returned empty content for $URL" >&2
-  exit 1
-fi
-
-# defuddle parse writes to stdout when no -o is given.
-npx -y defuddle parse "$TMP_HTML" --md
+exec "$PY" "$SCRIPT_DIR/cloak_fetch.py" "$URL"

@@ -12,9 +12,9 @@
 
 **English** · [中文](README_CN.md)
 
-External references: [CloakBrowser](https://github.com/CloakHQ/CloakBrowser) · [defuddle](https://github.com/kepano/defuddle) · [Claude Code hooks](https://docs.claude.com/en/docs/claude-code/hooks)
+External references: [CloakBrowser](https://github.com/CloakHQ/CloakBrowser) · [trafilatura](https://github.com/adbar/trafilatura) · [Claude Code hooks](https://docs.claude.com/en/docs/claude-code/hooks)
 
-Two paths for the same idea: when a web fetch is blocked by [Cloudflare](https://www.cloudflare.com/) (or similar bot protection), route the URL through [CloakBrowser](https://github.com/CloakHQ/CloakBrowser) — a stealth Chromium that passes the JS challenge — and return clean markdown via [defuddle](https://github.com/kepano/defuddle).
+Two paths for the same idea: when a web fetch is blocked by [Cloudflare](https://www.cloudflare.com/) (or similar bot protection), route the URL through [CloakBrowser](https://github.com/CloakHQ/CloakBrowser) — a stealth Chromium that passes the JS challenge — and return clean markdown via [trafilatura](https://github.com/adbar/trafilatura).
 
 - **[Path A: PostToolUse hook](#path-a--claude-code-posttooluse-hook)** — fully automatic on Claude Code. Every blocked `WebFetch` silently falls back; the agent never sees the failure.
 - **[Path B: SKILL.md skill](#path-b--skillmd-skill-for-hookless-agents)** — reactive fallback for any SKILL.md-aware agent (Codex, OpenCode, OpenClaw, SkillsMP). Agent decides to invoke it after seeing a 403/CF pattern.
@@ -27,7 +27,7 @@ Claude Code's built-in `WebFetch` (and `curl`, and `requests`, and most HTTP cli
 The server returned HTTP 403 Forbidden.
 ```
 
-CloakBrowser is a real Chromium with anti-bot patches at the C++ level that *does* pass those challenges. cloakFetch wires CloakBrowser + defuddle into Claude Code (and other agents) so the agent never has to tell the user "this page is unfetchable."
+CloakBrowser is a real Chromium with anti-bot patches at the C++ level that *does* pass those challenges. cloakFetch wires CloakBrowser + trafilatura into Claude Code (and other agents) so the agent never has to tell the user "this page is unfetchable."
 
 ## Two activation paths
 
@@ -53,7 +53,7 @@ cloakFetch/
 ├── skills/cloak-fetch/             # Path B — SKILL.md skill
 │   ├── SKILL.md                    #   pushy description + trigger heuristics
 │   ├── cloak_fetch.py              #   (same script, env-python shebang)
-│   └── cloak_fetch.sh              #   wrapper: locate python, fetch, defuddle
+│   └── cloak_fetch.sh              #   wrapper: locate python, fetch, extract
 ├── settings.snippet.json           #   PostToolUse JSON block to paste into ~/.claude/settings.json
 └── README.md
 ```
@@ -77,8 +77,7 @@ cloakFetch/
                           │ 2. regex-match failure       │
                           │ 3. extract tool_input.url    │
                           │ 4. call cloak_fetch.py       │
-                          │ 5. defuddle → markdown       │
-                          │ 6. emit additionalContext    │
+                          │ 5. emit additionalContext    │
                           └──────────────────────────────┘
                                          │
                                          ▼
@@ -88,7 +87,8 @@ cloakFetch/
                           │                              │
                           │ launch → goto → wait for CF  │
                           │ to clear → wait for content  │
-                          │ → dump rendered DOM to stdout│
+                          │ → trafilatura → markdown to  │
+                          │ stdout                       │
                           └──────────────────────────────┘
 ```
 
@@ -201,7 +201,7 @@ The agent runs this single command after a normal fetcher returns a 403/CF patte
 ~/.claude/skills/cloak-fetch/cloak_fetch.sh "<URL>"
 ```
 
-The wrapper handles everything: finds a `cloakbrowser`-importable Python, launches the headless browser, runs defuddle, prints clean markdown on stdout. Stderr carries progress messages; exit non-zero on any failure.
+The wrapper handles everything: finds a `cloakbrowser`-importable Python, launches the headless browser, runs trafilatura, prints clean markdown on stdout. Stderr carries progress messages; exit non-zero on any failure.
 
 ### Test (skill)
 
@@ -237,7 +237,7 @@ Inside `skills/cloak-fetch/cloak_fetch.py`:
 ## Prerequisites (both paths)
 
 - [CloakBrowser](https://github.com/CloakHQ/CloakBrowser) installed with the `cloakbrowser` Python package importable (a venv with `pip install cloakbrowser` works)
-- `npx` (for invoking `defuddle` on demand — no global install needed)
+- `trafilatura` installed into the same Python env (`pip install trafilatura`) — used for HTML → markdown extraction
 - Path A only: `jq` (for parsing the hook payload)
 
 ## Behaviour & safety

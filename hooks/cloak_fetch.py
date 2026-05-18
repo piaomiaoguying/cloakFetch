@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Fetch a Cloudflare-gated URL via CloakBrowser and print rendered HTML to stdout.
+"""Fetch a Cloudflare-gated URL via CloakBrowser and print clean markdown to stdout.
 
 Usage: cloak_fetch.py <url>
 
-Stdout: fully-rendered HTML of the page.
+Stdout: clean markdown extracted from the rendered page via trafilatura.
 Stderr: progress messages (safe to /dev/null).
 Exit 0 on success, 1 on failure.
 """
@@ -21,6 +21,13 @@ try:
     from cloakbrowser import launch
 except ImportError as e:
     print(f"cloakbrowser import failed: {e}", file=sys.stderr)
+    sys.exit(1)
+
+try:
+    import trafilatura
+except ImportError as e:
+    print(f"trafilatura import failed: {e}", file=sys.stderr)
+    print("install via: pip install trafilatura", file=sys.stderr)
     sys.exit(1)
 
 try:
@@ -53,9 +60,24 @@ try:
 
     print(f"[cloak] title: {page.title()}", file=sys.stderr)
     html = page.evaluate("() => document.documentElement.outerHTML")
-    sys.stdout.write(html)
     browser.close()
-    print(f"[cloak] done, {len(html)} bytes", file=sys.stderr)
+    print(f"[cloak] rendered, {len(html)} bytes HTML", file=sys.stderr)
+
+    md = trafilatura.extract(
+        html,
+        url=url,
+        output_format="markdown",
+        include_links=True,
+        include_images=False,
+        include_comments=False,
+        favor_recall=True,
+    )
+    if not md:
+        print("[cloak] trafilatura found no main content; emitting raw HTML", file=sys.stderr)
+        sys.stdout.write(html)
+    else:
+        sys.stdout.write(md)
+        print(f"[cloak] done, {len(md)} bytes markdown", file=sys.stderr)
 except Exception as e:
     print(f"[cloak] failed: {e}", file=sys.stderr)
     sys.exit(1)

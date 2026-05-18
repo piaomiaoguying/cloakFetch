@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # PostToolUse hook: when WebFetch fails with a WAF / bot-protection pattern
 # (Cloudflare, DataDome, Akamai, PerimeterX/HUMAN, Imperva, F5/Distil, Kasada,
-# AWS WAF, Sucuri, etc.), transparently retry with CloakBrowser + defuddle and
-# inject the markdown back as additionalContext.
+# AWS WAF, Sucuri, etc.), transparently retry with CloakBrowser + trafilatura
+# and inject the markdown back as additionalContext.
 #
 # Reads hook payload as JSON on stdin:
 #   { "tool_name": "WebFetch",
@@ -57,21 +57,12 @@ if [ ! -f "$CLOAK_FETCH" ] || [ -z "$CLOAK_PY" ] || [ ! -x "$CLOAK_PY" ]; then
   exit 0
 fi
 
-# Run the fallback. Both temp files cleaned up at end regardless of outcome.
-tmp_html=$(mktemp -t cloak_html.XXXXXX) || exit 0
-tmp_md=$(mktemp -t cloak_md.XXXXXX) || { rm -f "$tmp_html"; exit 0; }
-trap 'rm -f "$tmp_html" "$tmp_md"' EXIT
+# Run the fallback. Temp file cleaned up at end regardless of outcome.
+tmp_md=$(mktemp -t cloak_md.XXXXXX) || exit 0
+trap 'rm -f "$tmp_md"' EXIT
 
-if ! "$CLOAK_PY" "$CLOAK_FETCH" "$url" > "$tmp_html" 2>/dev/null; then
-  exit 0
-fi
-
-if [ ! -s "$tmp_html" ]; then
-  exit 0
-fi
-
-# Convert to markdown. Use npx -y so defuddle doesn't need a global install.
-if ! npx -y defuddle parse "$tmp_html" --md -o "$tmp_md" >/dev/null 2>&1; then
+# cloak_fetch.py writes clean markdown (trafilatura) directly to stdout.
+if ! "$CLOAK_PY" "$CLOAK_FETCH" "$url" > "$tmp_md" 2>/dev/null; then
   exit 0
 fi
 
@@ -81,7 +72,7 @@ fi
 
 # Emit additionalContext so Claude sees the fallback content.
 md_body=$(cat "$tmp_md")
-context=$(printf 'WebFetch was blocked by bot-protection / WAF for %s.\nFallback CloakBrowser fetch succeeded. Page content (clean markdown via defuddle) follows:\n\n---\n\n%s' "$url" "$md_body")
+context=$(printf 'WebFetch was blocked by bot-protection / WAF for %s.\nFallback CloakBrowser fetch succeeded. Page content (clean markdown via trafilatura) follows:\n\n---\n\n%s' "$url" "$md_body")
 
 jq -n --arg ctx "$context" '{
   "hookSpecificOutput": {

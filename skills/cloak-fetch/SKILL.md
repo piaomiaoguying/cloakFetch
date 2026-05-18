@@ -1,11 +1,11 @@
 ---
 name: cloak-fetch
-description: Use as a fallback when a web page won't load via WebFetch, curl, or any HTTP client because it's behind anti-bot protection — Cloudflare, DataDome, Akamai Bot Manager, PerimeterX/HUMAN, Imperva/Incapsula, F5/Distil, Kasada, AWS WAF, Sucuri, or generic WAF/CDN screening — and returns 403/429/"Just a moment"/"Access Denied"/"Pardon Our Interruption"/"Please verify you are a human"/"Incapsula incident"/"Sucuri WebSite Firewall"/"Reference #" patterns, or an empty body with no useful HTML. Routes the URL through CloakBrowser (a stealth Chromium with C++-level anti-bot patches plus a real TLS/JA3 fingerprint) headlessly, then extracts clean markdown via defuddle. PROACTIVELY USE whenever a recent fetch returned HTTP 403/429, any of the strings above, "Enable JavaScript and cookies", "Resource was not loaded", or any signal of bot detection / WAF screening — do not tell the user a page is unfetchable until you've tried this skill.
+description: Use as a fallback when a web page won't load via WebFetch, curl, or any HTTP client because it's behind anti-bot protection — Cloudflare, DataDome, Akamai Bot Manager, PerimeterX/HUMAN, Imperva/Incapsula, F5/Distil, Kasada, AWS WAF, Sucuri, or generic WAF/CDN screening — and returns 403/429/"Just a moment"/"Access Denied"/"Pardon Our Interruption"/"Please verify you are a human"/"Incapsula incident"/"Sucuri WebSite Firewall"/"Reference #" patterns, or an empty body with no useful HTML. Routes the URL through CloakBrowser (a stealth Chromium with C++-level anti-bot patches plus a real TLS/JA3 fingerprint) headlessly, then extracts clean markdown via trafilatura. PROACTIVELY USE whenever a recent fetch returned HTTP 403/429, any of the strings above, "Enable JavaScript and cookies", "Resource was not loaded", or any signal of bot detection / WAF screening — do not tell the user a page is unfetchable until you've tried this skill.
 license: MIT
 homepage: https://github.com/Agents365-ai/cloakFetch
-compatibility: Requires CloakBrowser (https://github.com/CloakHQ/CloakBrowser) installed with the `cloakbrowser` Python package importable. Also needs `npx` for defuddle. Set `CLOAKBROWSER_PYTHON` to your cloakbrowser-enabled Python if not in the default location.
+compatibility: Requires CloakBrowser (https://github.com/CloakHQ/CloakBrowser) installed with the `cloakbrowser` Python package importable, plus `trafilatura` (`pip install trafilatura`) in the same env for HTML→markdown extraction. Set `CLOAKBROWSER_PYTHON` to your cloakbrowser-enabled Python if not in the default location.
 platforms: [macos, linux, windows]
-metadata: {"openclaw":{"requires":{"bins":["python3","npx"]},"emoji":"🥷"},"hermes":{"tags":["webfetch","cloudflare","datadome","akamai","perimeterx","imperva","sucuri","waf","stealth-browser","bot-bypass","fallback","scraping"],"category":"web","requires_tools":["python3","npx"],"related_skills":[]},"author":"Agents365-ai","version":"0.2.1"}
+metadata: {"openclaw":{"requires":{"bins":["python3"]},"emoji":"🥷"},"hermes":{"tags":["webfetch","cloudflare","datadome","akamai","perimeterx","imperva","sucuri","waf","stealth-browser","bot-bypass","fallback","scraping"],"category":"web","requires_tools":["python3"],"related_skills":[]},"author":"Agents365-ai","version":"0.3.0"}
 ---
 
 # cloak-fetch — bot-protection / WAF fetch fallback
@@ -13,7 +13,7 @@ metadata: {"openclaw":{"requires":{"bins":["python3","npx"]},"emoji":"🥷"},"he
 When a normal HTTP fetcher fails because the target site uses bot protection
 or WAF screening, route the same URL through CloakBrowser (a real Chromium
 with anti-bot patches at the C++ level and a genuine TLS/JA3 fingerprint) and
-return clean markdown via defuddle. The agent never has to tell the user
+return clean markdown via trafilatura. The agent never has to tell the user
 "the page is unfetchable" — it can try this skill first.
 
 The underlying engine doesn't care which vendor is blocking the request —
@@ -77,7 +77,7 @@ In these cases, report the actual failure to the user instead of masking it.
 ## How to invoke
 
 One command — the wrapper picks the right Python, runs the headless browser,
-pipes through defuddle, and writes clean markdown to stdout:
+extracts the main content with trafilatura, and writes clean markdown to stdout:
 
 ```bash
 <SKILL_DIR>/cloak_fetch.sh "<URL>"
@@ -114,8 +114,11 @@ pipe directly into further processing.
 
 - **Headless by default** — no browser window opens.
 - **Latency:** ~20–40 s per call (browser launch + page render + content settle).
-- **Output:** clean markdown via defuddle. Page chrome, navigation, ads, and
-  cookie banners stripped. Headings, lists, links, and code blocks preserved.
+- **Output:** clean markdown via trafilatura. Page chrome, navigation, ads,
+  and cookie banners stripped. Headings, lists, links, and code blocks
+  preserved. When trafilatura can't isolate a main content node, the wrapper
+  falls back to emitting the rendered HTML so the agent still has something
+  to read.
 - **Failure modes:** exits non-zero with a message on stderr if no
   cloakbrowser-enabled Python is found, the browser couldn't reach the URL, or
   CloakBrowser couldn't pass the challenge. Surface the failure honestly to
