@@ -3,7 +3,7 @@
   "hooks": [
     {
       "type": "command",
-      "command": "/Users/niehu/.claude/hooks/webfetch_cloak_fallback.sh"
+      "command": "$HOME/.claude/hooks/webfetch_cloak_fallback.sh"
     }
   ]
 }

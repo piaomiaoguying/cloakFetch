@@ -88,8 +88,11 @@ mkdir -p ~/.claude/hooks
 cp hooks/cloak_fetch.py hooks/webfetch_cloak_fallback.sh ~/.claude/hooks/
 chmod +x ~/.claude/hooks/cloak_fetch.py ~/.claude/hooks/webfetch_cloak_fallback.sh
 
-# 2. Point cloak_fetch.py's shebang at your CloakBrowser venv (edit line 1)
-#    Default: #!/Users/niehu/github/CloakBrowser/.venv/bin/python
+# 2. Tell the hook where your CloakBrowser-enabled Python lives. Add to your
+#    shell rc (~/.zshrc, ~/.bashrc, etc.):
+#      export CLOAKBROWSER_PYTHON="$HOME/path/to/CloakBrowser/.venv/bin/python"
+#    The hook also auto-tries $HOME/github/CloakBrowser/.venv/bin/python and
+#    `python3` as fallbacks, so you can skip this if either of those works.
 
 # 3. Register the hook in ~/.claude/settings.json — add the contents of
 #    settings.snippet.json as a new entry inside the "PostToolUse" array.
@@ -105,7 +108,7 @@ chmod +x ~/.claude/hooks/cloak_fetch.py ~/.claude/hooks/webfetch_cloak_fallback.
         "hooks": [
           {
             "type": "command",
-            "command": "/Users/niehu/.claude/hooks/webfetch_cloak_fallback.sh"
+            "command": "$HOME/.claude/hooks/webfetch_cloak_fallback.sh"
           }
         ]
       }
@@ -138,7 +141,8 @@ Inside `hooks/webfetch_cloak_fallback.sh`:
 
 | Variable | Default | Purpose |
 |---|---|---|
-| `CLOAK_FETCH` | `/Users/niehu/.claude/hooks/cloak_fetch.py` | Path to the Python fetcher |
+| `CLOAK_FETCH` | `$HOME/.claude/hooks/cloak_fetch.py` | Path to the Python fetcher. Override with an env var of the same name. |
+| `CLOAKBROWSER_PYTHON` | `$HOME/github/CloakBrowser/.venv/bin/python` → `python3` | Python interpreter that runs the fetcher. Must have `cloakbrowser` importable. |
 | `FAILURE_REGEX` | `403\|forbidden\|cloudflare\|just a moment\|resource was not loaded\|access denied\|blocked` | Case-insensitive regex against `tool_response`. Widen / narrow to taste. |
 
 ---

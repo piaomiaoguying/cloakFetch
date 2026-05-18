@@ -13,7 +13,17 @@
 
 set -uo pipefail
 
-CLOAK_FETCH="/Users/niehu/.claude/hooks/cloak_fetch.py"
+# Path to the Python fetcher. Override if you keep it elsewhere.
+CLOAK_FETCH="${CLOAK_FETCH:-$HOME/.claude/hooks/cloak_fetch.py}"
+
+# Python interpreter with `cloakbrowser` importable. Override by setting
+# CLOAKBROWSER_PYTHON (e.g. to your CloakBrowser venv) in your shell rc.
+# The default looks for the common install location; final fallback is `python3`.
+CLOAK_PY="${CLOAKBROWSER_PYTHON:-$HOME/github/CloakBrowser/.venv/bin/python}"
+if [ ! -x "$CLOAK_PY" ]; then
+  CLOAK_PY="$(command -v python3 2>/dev/null)"
+fi
+
 FAILURE_REGEX="403|forbidden|cloudflare|just a moment|resource was not loaded|access denied|blocked"
 
 # Read full payload
@@ -36,8 +46,8 @@ if [ -z "$url" ]; then
   exit 0
 fi
 
-# Sanity-check the fetcher exists and is executable
-if [ ! -x "$CLOAK_FETCH" ]; then
+# Sanity-check we have both the fetcher and a usable Python interpreter
+if [ ! -f "$CLOAK_FETCH" ] || [ -z "$CLOAK_PY" ] || [ ! -x "$CLOAK_PY" ]; then
   exit 0
 fi
 
@@ -46,7 +56,7 @@ tmp_html=$(mktemp -t cloak_html.XXXXXX) || exit 0
 tmp_md=$(mktemp -t cloak_md.XXXXXX) || { rm -f "$tmp_html"; exit 0; }
 trap 'rm -f "$tmp_html" "$tmp_md"' EXIT
 
-if ! "$CLOAK_FETCH" "$url" > "$tmp_html" 2>/dev/null; then
+if ! "$CLOAK_PY" "$CLOAK_FETCH" "$url" > "$tmp_html" 2>/dev/null; then
   exit 0
 fi
 

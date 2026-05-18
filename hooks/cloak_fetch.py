@@ -1,4 +1,4 @@
-#!/Users/niehu/github/CloakBrowser/.venv/bin/python
+#!/usr/bin/env python3
 """Fetch a Cloudflare-gated URL via CloakBrowser and print rendered HTML to stdout.
 
 Usage: cloak_fetch.py <url>
