@@ -1,18 +1,54 @@
 # cloakFetch
 
-Claude Code `PostToolUse` hook that transparently falls back to [CloakBrowser](https://github.com/CloakHQ/CloakBrowser) when the built-in `WebFetch` tool is blocked by Cloudflare or similar bot protection.
+Two paths for the same idea: when a web fetch is blocked by [Cloudflare](https://www.cloudflare.com/) (or similar bot protection), route the URL through [CloakBrowser](https://github.com/CloakHQ/CloakBrowser) — a stealth Chromium that passes the JS challenge — and return clean markdown via [defuddle](https://github.com/kepano/defuddle).
+
+- **[Path A: PostToolUse hook](#path-a--claude-code-posttooluse-hook)** — fully automatic on Claude Code. Every blocked `WebFetch` silently falls back; the agent never sees the failure.
+- **[Path B: SKILL.md skill](#path-b--skillmd-skill-for-hookless-agents)** — reactive fallback for any SKILL.md-aware agent (Codex, OpenCode, OpenClaw, SkillsMP). Agent decides to invoke it after seeing a 403/CF pattern.
 
 ## Why
 
-Claude Code's `WebFetch` goes through a backend HTTP client and `curl` can't pass Cloudflare's JS challenge — so any request to a CF-protected site (`science.org`, many publishers, lots of news sites) comes back as:
+Claude Code's built-in `WebFetch` (and `curl`, and `requests`, and most HTTP clients) can't pass Cloudflare's JS challenge — so any request to a CF-protected site (`science.org`, many publishers, lots of news sites) comes back as:
 
 ```
 The server returned HTTP 403 Forbidden.
 ```
 
-CloakBrowser is a real Chromium with anti-bot patches at the C++ level that passes those challenges. This hook wires the two together: when `WebFetch` fails with a recognisable bot-block pattern, the hook retries through CloakBrowser headlessly, runs [defuddle](https://github.com/kepano/defuddle) to strip page chrome, and injects the clean markdown back into the agent's context as `additionalContext`. The agent never sees the failure.
+CloakBrowser is a real Chromium with anti-bot patches at the C++ level that *does* pass those challenges. cloakFetch wires CloakBrowser + defuddle into Claude Code (and other agents) so the agent never has to tell the user "this page is unfetchable."
 
-## Architecture
+## Two activation paths
+
+|  | Path A: Hook | Path B: Skill |
+|---|---|---|
+| **Trigger** | Automatic — fires on every WebFetch result | Reactive — agent decides after seeing a failed fetch |
+| **Agent cognition** | Zero — invisible upgrade | Has to notice 403/CF pattern + recall skill |
+| **Runtime support** | Claude Code only (needs `PostToolUse` hook system) | Any SKILL.md-aware agent: Claude Code, OpenClaw, Codex, OpenCode, SkillsMP |
+| **Latency on hit** | ~25–40 s | ~25–40 s |
+| **Latency on miss** | ~milliseconds (regex check, no browser) | None (skill not invoked) |
+| **Install** | Copy 2 scripts + edit `~/.claude/settings.json` | Drop skill folder into the agent's skills dir |
+| **Files** | `hooks/cloak_fetch.py` + `hooks/webfetch_cloak_fallback.sh` | `skills/cloak-fetch/SKILL.md` + `cloak_fetch.py` + `cloak_fetch.sh` |
+
+Same `cloak_fetch.py` underneath both — the difference is just *how* it gets activated.
+
+## Repo layout
+
+```
+cloakFetch/
+├── hooks/                          # Path A — Claude Code PostToolUse
+│   ├── cloak_fetch.py              #   headless CloakBrowser → rendered HTML
+│   └── webfetch_cloak_fallback.sh  #   payload matcher + orchestrator
+├── skills/cloak-fetch/             # Path B — SKILL.md skill
+│   ├── SKILL.md                    #   pushy description + trigger heuristics
+│   ├── cloak_fetch.py              #   (same script, env-python shebang)
+│   └── cloak_fetch.sh              #   wrapper: locate python, fetch, defuddle
+├── settings.snippet.json           #   PostToolUse JSON block to paste into ~/.claude/settings.json
+└── README.md
+```
+
+---
+
+## Path A — Claude Code PostToolUse hook
+
+### Architecture
 
 ```
 ┌───────────────────┐    fails (CF 403)
@@ -44,14 +80,7 @@ CloakBrowser is a real Chromium with anti-bot patches at the C++ level that pass
 
 Two independent files so failure-detection regex (bash) and browser logic (Python) evolve separately.
 
-## Prerequisites
-
-- [Claude Code](https://github.com/anthropics/claude-code)
-- [CloakBrowser](https://github.com/CloakHQ/CloakBrowser) installed somewhere with a working Python venv (e.g. `/Users/niehu/github/CloakBrowser/.venv`)
-- `jq` (for parsing the hook payload)
-- `npx` (for invoking `defuddle` on demand — no global install needed)
-
-## Install
+### Install (hook)
 
 ```bash
 # 1. Copy the hook scripts into Claude Code's hook directory
@@ -87,7 +116,7 @@ chmod +x ~/.claude/hooks/cloak_fetch.py ~/.claude/hooks/webfetch_cloak_fallback.
 
 The hook becomes active on the next tool call — no Claude Code restart required.
 
-## Test
+### Test (hook)
 
 Simulate the harness by piping a fake failed-WebFetch payload to the hook:
 
@@ -101,38 +130,99 @@ echo '{
 
 Expected: `{"hookSpecificOutput": {"hookEventName": "PostToolUse", "additionalContext": "WebFetch was blocked... <markdown>"}}` on stdout, exit code 0.
 
-For a live test, ask Claude inside a Claude Code session to fetch any Cloudflare-protected URL. You should see the WebFetch 403 immediately followed by a `PostToolUse:WebFetch hook additional context: ...` block in the conversation.
+For a live test, ask Claude inside a Claude Code session to fetch any Cloudflare-protected URL. You should see the `WebFetch` 403 immediately followed by a `PostToolUse:WebFetch hook additional context: ...` block in the conversation.
 
-## Configuration knobs
+### Configuration knobs (hook)
 
-All inside `hooks/webfetch_cloak_fallback.sh`:
+Inside `hooks/webfetch_cloak_fallback.sh`:
 
 | Variable | Default | Purpose |
 |---|---|---|
 | `CLOAK_FETCH` | `/Users/niehu/.claude/hooks/cloak_fetch.py` | Path to the Python fetcher |
 | `FAILURE_REGEX` | `403\|forbidden\|cloudflare\|just a moment\|resource was not loaded\|access denied\|blocked` | Case-insensitive regex against `tool_response`. Widen / narrow to taste. |
 
-Inside `hooks/cloak_fetch.py`:
+---
+
+## Path B — SKILL.md skill (for hookless agents)
+
+The hook approach only works on Claude Code. For agents that don't have a `PostToolUse` system — Codex CLI, OpenCode, OpenClaw, SkillsMP — install cloakFetch as a SKILL.md-format skill. The agent reads the SKILL.md when relevant and invokes the wrapper script after recognising a Cloudflare failure pattern.
+
+### Install (skill)
+
+| Agent | Install path |
+|---|---|
+| **Claude Code** (global) | `cp -r skills/cloak-fetch ~/.claude/skills/cloak-fetch` |
+| **Claude Code** (project) | `cp -r skills/cloak-fetch .claude/skills/cloak-fetch` |
+| **OpenClaw** (global) | `cp -r skills/cloak-fetch ~/.openclaw/skills/cloak-fetch` |
+| **OpenClaw** (project) | `cp -r skills/cloak-fetch skills/cloak-fetch` |
+| **SkillsMP** | search for `cloak-fetch` on [skillsmp.com](https://skillsmp.com) |
+
+If your CloakBrowser venv isn't at the default path, set the env var (in your shell rc or per-invocation):
+
+```bash
+export CLOAKBROWSER_PYTHON=/path/to/your/cloakbrowser/.venv/bin/python
+```
+
+### Invoke (skill)
+
+The agent runs this single command after a normal fetcher returns a 403/CF pattern:
+
+```bash
+~/.claude/skills/cloak-fetch/cloak_fetch.sh "<URL>"
+```
+
+The wrapper handles everything: finds a `cloakbrowser`-importable Python, launches the headless browser, runs defuddle, prints clean markdown on stdout. Stderr carries progress messages; exit non-zero on any failure.
+
+### Test (skill)
+
+```bash
+~/.claude/skills/cloak-fetch/cloak_fetch.sh "https://www.science.org/content/page/information-authors-research-articles"
+```
+
+Expected: ~20–40 s, then ~25 KB of clean markdown on stdout (page title is "Information for Authors-Research Articles").
+
+For a sanity check on a non-Cloudflare site:
+
+```bash
+~/.claude/skills/cloak-fetch/cloak_fetch.sh "https://example.com"
+# → "This domain is for use in documentation examples..."
+```
+
+### Configuration knobs (skill)
+
+| Env var | Default | Purpose |
+|---|---|---|
+| `CLOAKBROWSER_PYTHON` | (auto-detect: `~/github/CloakBrowser/.venv/bin/python`, then `python3`) | Python interpreter with `cloakbrowser` importable |
+
+Inside `skills/cloak-fetch/cloak_fetch.py`:
 
 | Knob | Default | Purpose |
 |---|---|---|
-| Shebang line | `#!/Users/niehu/github/CloakBrowser/.venv/bin/python` | Which Python (and thus which venv) executes the script. Must have `cloakbrowser` importable. |
-| `headless=True` (line 31) | `True` | Flip to `False` if you want to see the browser window for debugging |
-| Selector wait list (line 44) | `main, article, .article__body, .core-container, .pb-page-body` | Selectors that signal SPA content has rendered. Extend if a target site needs something more specific. |
-| `time.sleep(2)` after selector wait | 2s | Extra settle for late-loading JS. |
+| `headless=True` | `True` | Flip to `False` to see the browser window for debugging |
+| Selector wait list | `main, article, .article__body, .core-container, .pb-page-body` | Selectors that signal SPA content has rendered. Extend if a target site needs something more specific. |
+| `time.sleep(2)` settle | 2 s | Extra wait for late-loading JS. |
+
+---
+
+## Prerequisites (both paths)
+
+- [CloakBrowser](https://github.com/CloakHQ/CloakBrowser) installed with the `cloakbrowser` Python package importable (a venv with `pip install cloakbrowser` works)
+- `npx` (for invoking `defuddle` on demand — no global install needed)
+- Path A only: `jq` (for parsing the hook payload)
 
 ## Behaviour & safety
 
-- **Fail-closed**: the hook always exits `0`, even when CloakBrowser or defuddle fails. The original WebFetch error is never replaced with a worse one.
-- **Silent on the happy path**: if `WebFetch` succeeded, or the failure doesn't match the regex, or the tool isn't `WebFetch`, the hook exits `0` with no stdout — zero impact.
-- **Cost**: a triggered fallback runs a real browser, takes ~20–40 s, and uses non-trivial memory. The regex match is cheap and runs on every WebFetch call.
-- **Trust boundary**: the hook only acts on URLs that *Claude* already chose to send to `WebFetch`. It does not introduce a new way for the agent to reach the internet — same URL surface as before, just a more capable backend.
+- **Fail-closed.** Both paths leave the original failure intact if something inside cloakFetch breaks (no Python with cloakbrowser, network down, CloakBrowser can't pass the challenge). The agent is never tricked into thinking a fetch succeeded when it didn't.
+- **Silent on the happy path.** The hook does nothing when the regex doesn't match; the skill is simply not invoked when there's no failure to recover from.
+- **Cost.** A triggered fallback runs a real browser — ~20–40 s wall clock, non-trivial memory. The hook's regex check on the happy path costs ~milliseconds.
+- **Trust boundary.** Both paths act only on URLs the agent already chose to send to its fetch tool. They do not introduce a new way for the agent to reach the internet — same URL surface, just a more capable backend.
 
 ## Limitations
 
 - Cloudflare's hardest challenges (interactive Turnstile, etc.) may still defeat headless mode — flip `headless=False` in `cloak_fetch.py` if you need full CF coverage.
-- The hook reads `tool_response` as a string for regex matching. If a future Claude Code version changes the payload shape, the matcher needs updating (`jq` selector at the top of the bash script).
-- `additionalContext` size is bounded by Claude Code's hook output handling — very large pages are persisted to disk and only previewed inline.
+- The hook reads `tool_response` as a string for regex matching. If a future Claude Code version changes the payload shape, the matcher's `jq` selector needs updating.
+- `additionalContext` size is bounded by Claude Code's hook output handling — very large pages are persisted to disk and only previewed inline (the persisted file path is shown so the agent can `Read` it).
+- The skill is **reactive**: it works only when the agent recognises the failure and recalls the skill. If the agent gives up after the first 403 without trying again, the skill doesn't help. The SKILL.md description is intentionally pushy to combat this — review and tweak if your agent under-triggers.
 
 ## License
 
