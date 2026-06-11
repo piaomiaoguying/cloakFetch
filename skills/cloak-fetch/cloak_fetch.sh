@@ -37,4 +37,7 @@ if [ -z "$PY" ]; then
   exit 1
 fi
 
-exec "$PY" "$SCRIPT_DIR/cloak_fetch.py" "$URL"
+# `arch -arm64` forces native Apple Silicon mode even when the bash
+# subprocess runs under Rosetta (x86_64). Without it the universal binary
+# Python picks x86_64 and can't load arm64-compiled native extensions.
+exec arch -arm64 "$PY" "$SCRIPT_DIR/cloak_fetch.py" "$URL"
