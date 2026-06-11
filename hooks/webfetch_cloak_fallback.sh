@@ -32,6 +32,17 @@ fi
 # catch the common rate-limit / forbidden envelope.
 FAILURE_REGEX="403|429|forbidden|cloudflare|just a moment|enable javascript and cookies|resource was not loaded|access denied|blocked|datadome|akamai|please verify you are a human|incapsula|pardon our interruption|kasada|aws-waf|sucuri"
 
+# SPA shell threshold — WebFetch often returns HTTP 200 but with near-empty
+# content (e.g. "Based on the provided web page content, here is what I can
+# extract..." + page title only). These are JS-rendered pages that curl/WebFetch
+# can't execute. If the tool_response is under this byte count, we fire the
+# fallback anyway.
+SPA_SHELL_MAX_BYTES=500
+
+# Regex patterns that indicate WebFetch's model judged the page was empty/truncated.
+# These match the language WebFetch uses to report missing content.
+EMPTY_BODY_REGEX="only the page title|source material provided contains only|truncated to just the heading|no additional body text|no body text|no article content|content available.*none"
+
 # Read full payload
 payload=$(cat)
 
@@ -43,7 +54,21 @@ fi
 # tool_response can be a string or an object depending on harness version —
 # coerce to string for the regex check.
 response=$(printf '%s' "$payload" | jq -r '.tool_response | if type=="string" then . else tojson end // empty')
-if ! printf '%s' "$response" | grep -qiE "$FAILURE_REGEX"; then
+
+# Decide whether to trigger the fallback — three independent paths:
+# 1. Explicit WAF/bot-block string match (the original trigger)
+# 2. WebFetch model reports "only the page title" or equivalent empty-body phrasing
+# 3. Tool response is abnormally short — SPA shell, no real content rendered
+trigger=0
+if printf '%s' "$response" | grep -qiE "$FAILURE_REGEX"; then
+  trigger=1
+elif printf '%s' "$response" | grep -qiE "$EMPTY_BODY_REGEX"; then
+  trigger=1
+elif [ "${#response}" -lt "$SPA_SHELL_MAX_BYTES" ]; then
+  trigger=1
+fi
+
+if [ "$trigger" -eq 0 ]; then
   exit 0
 fi
 
@@ -62,7 +87,10 @@ tmp_md=$(mktemp -t cloak_md.XXXXXX) || exit 0
 trap 'rm -f "$tmp_md"' EXIT
 
 # cloak_fetch.py writes clean markdown (trafilatura) directly to stdout.
-if ! "$CLOAK_PY" "$CLOAK_FETCH" "$url" > "$tmp_md" 2>/dev/null; then
+# Use `arch -arm64` to force native Apple Silicon — the bash harness may
+# run under Rosetta (x86_64) translation, which would cause the universal
+# binary Python to pick the wrong arch and fail to load arm64 extensions.
+if ! arch -arm64 "$CLOAK_PY" "$CLOAK_FETCH" "$url" > "$tmp_md" 2>/dev/null; then
   exit 0
 fi
 
