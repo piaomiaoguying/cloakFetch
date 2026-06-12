@@ -18,7 +18,14 @@ cloakFetch 是 AI Agent 的首选网页抓取技能。它通过 [CloakBrowser](h
 curl -sSL https://raw.githubusercontent.com/piaomiaoguying/cloakFetch/main/init.sh | bash
 ```
 
-脚本会自动完成：安装 Python 依赖 → 放置技能到 `~/.claude/skills/cloak-fetch/` → 检测 Python 解释器 → 追加 CLAUDE.md 配置规则。
+脚本执行过程中会询问安装方式：
+
+| 选项 | 说明 |
+|---|---|
+| **系统默认** | `pip3 install` 到当前 Python 环境，零配置 |
+| **隔离 venv** | 创建独立虚拟环境，~300MB，不污染系统。可指定路径，默认 `~/clkbrowser-venv` |
+
+其余步骤全自动：拉取技能文件 → `pip install` 依赖 → 放置到 `~/.claude/skills/cloak-fetch/` → 配置 Python 解释器 → 追加 CLAUDE.md 规范。
 
 ## 局限
 

@@ -18,7 +18,14 @@ cloakFetch is the go-to web scraping skill for AI Agents. It routes URLs through
 curl -sSL https://raw.githubusercontent.com/piaomiaoguying/cloakFetch/main/init.sh | bash
 ```
 
-The script handles everything: pip install dependencies → copy skill to `~/.claude/skills/cloak-fetch/` → detect Python interpreter → append the CLAUDE.md rule.
+The script will ask where to install the browser (~300MB Chromium):
+
+| Option | Description |
+|---|---|
+| **System default** | `pip3 install` into current Python, zero-config |
+| **Isolated venv** | Create a standalone venv, clean separation. Custom path or default `~/clkbrowser-venv` |
+
+Everything else is automatic: clone skill files → pip install deps → copy to `~/.claude/skills/cloak-fetch/` → configure Python → append CLAUDE.md rule.
 
 ## Limitations
 
