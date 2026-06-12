@@ -83,32 +83,12 @@ extracts the main content with trafilatura, and writes clean markdown to stdout:
 <SKILL_DIR>/cloak_fetch.sh "<URL>"
 ```
 
-Where `<SKILL_DIR>` is wherever this skill is installed. Common locations:
+Where `<SKILL_DIR>` is wherever this skill is installed — for example
+`~/.claude/skills/cloak-fetch` or `skills/cloak-fetch`.
 
-- Claude Code: `~/.claude/skills/cloak-fetch`
-- OpenClaw: `~/.openclaw/skills/cloak-fetch`
-- Codex: `~/.codex/skills/cloak-fetch`
-- Project-local: `.claude/skills/cloak-fetch` or `skills/cloak-fetch`
+Make sure `cloakbrowser` and `trafilatura` are installed (`pip install cloakbrowser trafilatura`),
+and either set `CLOAKBROWSER_PYTHON` or add your CloakBrowser venv path to `cloak_fetch.conf`.
 
-A portable invocation that finds the skill across these locations:
-
-```bash
-for d in \
-  "$HOME/.claude/skills/cloak-fetch" \
-  "$HOME/.openclaw/skills/cloak-fetch" \
-  "$HOME/.codex/skills/cloak-fetch" \
-  ".claude/skills/cloak-fetch" \
-  "skills/cloak-fetch"; do
-  if [ -x "$d/cloak_fetch.sh" ]; then
-    SKILL_DIR="$d"; break
-  fi
-done
-
-"$SKILL_DIR/cloak_fetch.sh" "https://www.science.org/content/page/information-authors-research-articles"
-```
-
-The wrapper streams clean markdown on stdout. Save to a file with `> out.md` or
-pipe directly into further processing.
 
 ## Behavior
 
@@ -128,7 +108,24 @@ pipe directly into further processing.
 
 | Env var | Purpose | Default |
 |---|---|---|
-| `CLOAKBROWSER_PYTHON` | Path to the Python interpreter with `cloakbrowser` installed | `~/github/CloakBrowser/.venv/bin/python`, falling back to `python3` |
+| `CLOAKBROWSER_PYTHON` | Path to the Python interpreter with `cloakbrowser` installed | Reads `cloak_fetch.conf` in the skill directory, then falls back to `python3` on PATH |
+
+### `cloak_fetch.conf` (recommended)
+
+A plain text file in the skill directory listing one Python path per line.
+Lines starting with `#` are comments. Paths are tried top-to-bottom; the
+first one that can `import cloakbrowser` wins.
+
+```ini
+# Example cloak_fetch.conf
+# /Users/alice/CloakBrowser/.venv/bin/python
+# /opt/CloakBrowser/.venv/bin/python
+# /home/bob/CloakBrowser/.venv/bin/python
+/Users/zs/工作/py/CloakBrowser/.venv/bin/python
+```
+
+If no path in the file works, the skill falls back to `python3` on PATH
+(which works fine when `cloakbrowser` is installed via `pip install cloakbrowser`).
 
 For more advanced tuning (headless toggle, content-selector wait list, settle
 timing), edit `cloak_fetch.py` directly — see comments in that file.
@@ -149,7 +146,4 @@ User: "Get the authors info from https://www.science.org/content/page/informatio
 
 ## Related
 
-- [cloakFetch hook](../../hooks/) — same fallback wired up as a Claude Code
-  `PostToolUse` hook (fully automatic, no agent decision required). Use the
-  hook on Claude Code; use this skill on agents that lack a hook system
-  (Codex, OpenCode, OpenClaw, etc.).
+- [CloakBrowser](https://github.com/CloakHQ/CloakBrowser) — stealth Chromium used under the hood

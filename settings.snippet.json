@@ -1,9 +1,0 @@
-{
-  "matcher": "WebFetch",
-  "hooks": [
-    {
-      "type": "command",
-      "command": "$HOME/.claude/hooks/webfetch_cloak_fallback.sh"
-    }
-  ]
-}
