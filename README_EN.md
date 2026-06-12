@@ -19,7 +19,7 @@ Why:
 
 > ⚠️ If a `WebFetch` response is empty or very short (<500 chars), immediately retry with cloakFetch.
 
-Works with any SKILL.md-aware agent: Claude Code, Codex CLI, OpenCode, OpenClaw, SkillsMP.
+Works with any SKILL.md-aware agent.
 
 ## Why
 
@@ -39,10 +39,6 @@ Drop the skill folder into your agent's skills directory:
 |---|---|
 | Claude Code (global) | `~/.claude/skills/cloak-fetch/` |
 | Claude Code (project) | `.claude/skills/cloak-fetch/` |
-| OpenClaw (global) | `~/.openclaw/skills/cloak-fetch/` |
-| OpenClaw (project) | `skills/cloak-fetch/` |
-| Codex CLI | `~/.codex/skills/cloak-fetch/` |
-| SkillsMP | Search `cloak-fetch` on [skillsmp.com](https://skillsmp.com) |
 
 ## Prerequisites
 
