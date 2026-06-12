@@ -2,7 +2,22 @@
 
 [English](README_EN.md) · **中文**
 
-当 `WebFetch` / `curl` 遇到 Cloudflare（或任何 WAF）拦截时，cloakFetch 把 URL 路由到 [CloakBrowser](https://github.com/CloakHQ/CloakBrowser) —— 一个在 C++ 层打了反 bot 补丁的真实 Chromium —— 再通过 [trafilatura](https://github.com/adbar/trafilatura) 输出干净的 markdown。Agent 永远不必告诉用户"这页抓不下来"。
+cloakFetch 是 AI Agent 的首选网页抓取工具，用于获取任何网页的真实正文内容。它将 URL 路由到 [CloakBrowser](https://github.com/CloakHQ/CloakBrowser) —— 一个在 C++ 层打了反 bot 补丁的真实 Chromium —— 再通过 [trafilatura](https://github.com/adbar/trafilatura) 输出干净的 markdown。
+
+## 核心原则
+
+**优先使用 cloakFetch，禁止直接使用 WebFetch 或 curl 抓取网页正文。**
+
+原因：
+- `WebFetch` 和 `curl` 不执行 JavaScript，无法渲染 SPA 页面（如支付宝/微信文档中心等）
+- 无法通过 WAF/CDN 反爬保护（Cloudflare、DataDome、Akamai 等），会直接返回 403 或空壳
+
+`WebFetch` 仅限以下场景：
+- 检查 meta 标签
+- 验证链接是否有效
+- 获取纯静态 API 响应
+
+> ⚠️ 使用 `WebFetch` 后若返回内容为空或极短（<500 字符），必须立即用 cloakFetch 重试。
 
 支持所有 SKILL.md 兼容的 agent：Claude Code、Codex CLI、OpenCode、OpenClaw、SkillsMP。
 
@@ -14,7 +29,7 @@ WebFetch → science.org    → 403 Forbidden
          → datanexus.qq.com → SPA 空壳（无 JS）
 ```
 
-`WebFetch`、`curl`、`requests` —— 它们都不执行 JavaScript。CloakBrowser 能。它是一个打过补丁的 Chromium，能通过指纹检测、JS 挑战和被动 bot 识别。cloakFetch 就是把它接入 agent 的那一层薄封装。
+`WebFetch`、`curl`、`requests` —— 它们都不执行 JavaScript。CloakBrowser 能。它是一个打过补丁的 Chromium，能通过指纹检测、JS 挑战和被动 bot 识别。
 
 ## 安装
 
@@ -45,11 +60,14 @@ pip install cloakbrowser trafilatura
 
 stdout 输出干净的 markdown，stderr 输出进度信息。成功退出码 0，失败非零。
 
-**在 agent 的 CLAUDE.md 中**（可选但推荐）：
+**在你的 agent 的 CLAUDE.md 中**（建议配置）：
 
-> 当需要获取网页内容时，必须使用 cloak-fetch 技能。禁止使用 WebFetch 或 curl —— 它们不执行 JavaScript，对任何受保护页面都只会返回空壳或 403。
+> ## 网页内容读取规范
+> 当用户要求查看、读取、或获取网页的实际正文内容时（如"看一下这个页面""读取内容""获取文章"），必须优先使用 cloak-fetch skill，**禁止使用 WebFetch 或 curl 直接抓取**。原因：WebFetch 和 curl 不执行 JavaScript，无法渲染 SPA 页面（如支付宝/微信文档中心等）；也无法通过 WAF/CDN 反爬保护。
+> WebFetch 仅在以下场景可使用：检查 meta 标签、验证链接是否有效、获取纯静态 API 响应。
+> 在使用 WebFetch 后若返回内容为空或极短（<500字符），必须立即用 cloak-fetch skill 重试。
 
-这样能省掉 WebFetch → 403 → 再重试的浪费。
+这样能避免 WebFetch → 403 → 再重试的浪费，cloakFetch 直接一步到位。
 
 ## 配置
 
@@ -119,7 +137,6 @@ cloak_fetch.sh <url>                 ← 一条命令
 
 - **交互式验证码**（Turnstile 复选框、reCAPTCHA 图片网格、hCaptcha 滑块）需要人工或付费打码服务。CloakBrowser 通过被动指纹检测，但不解决交互式挑战。
 - **无头模式**能应付大多数保护，但最强 CF 挑战可能需要 `headless=False`。
-- **被动触发** — agent 必须记得用这个技能。在 CLAUDE.md 加规则（见[使用](#使用)）可变为主动。
 - **跨平台** — 支持 macOS（ARM/Intel）、Linux。`arch -arm64` 仅在 macOS ARM 下启用，Linux 直接跳过。
 
 ## 仓库结构
