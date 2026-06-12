@@ -27,6 +27,11 @@ curl -sSL https://raw.githubusercontent.com/piaomiaoguying/cloakFetch/main/init.
 
 其余步骤全自动：拉取技能文件 → `pip install` 依赖 → 放置到 `~/.claude/skills/cloak-fetch/` → 配置 Python 解释器 → 追加 CLAUDE.md 规范。
 
+> **网络问题**：`git clone` 和 `pip3 install` 在大陆网络可能较慢或超时，建议先设置代理：
+> ```bash
+> export https_proxy=http://127.0.0.1:7890 http_proxy=http://127.0.0.1:7890
+> ```
+
 ## 局限
 
 - 交互式验证码（Turnstile 复选框、reCAPTCHA 图片等）需人工处理

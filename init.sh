@@ -2,7 +2,7 @@
 # cloakFetch 一键初始化脚本
 # 本地:  ./init.sh                      # 交互选择
 #        ./init.sh --system              # 系统默认
-#        ./init.sh --venv /path/to/venv  # 指定 venv
+#        ./init.sh --venv [路径]         # venv 模式，默认 ~/clkbrowser-venv
 # 远程:  curl -sSL https://raw.githubusercontent.com/piaomiaoguying/cloakFetch/main/init.sh | bash
 set -uo pipefail
 
@@ -21,11 +21,15 @@ while [ $# -gt 0 ]; do
     --system) INSTALL_MODE="system" ;;
     --venv)
       if [ -z "${2:-}" ] || [[ "$2" == -* ]]; then
-        echo "用法: $0 --venv <路径>" >&2; exit 2
+        INSTALL_MODE="venv"
+        VENV_PATH="${HOME}/clkbrowser-venv"
+      else
+        INSTALL_MODE="venv"
+        VENV_PATH="$2"
+        shift
       fi
-      INSTALL_MODE="venv"; VENV_PATH="$2"; shift
       ;;
-    *) echo "未知参数: $1"; echo "用法: $0 [--system | --venv <路径>]"; exit 2 ;;
+    *) echo "未知参数: $1"; echo "用法: $0 [--system | --venv [路径]]"; exit 2 ;;
   esac
   shift
 done
@@ -160,14 +164,18 @@ if [ -f "${CLAUDE_MD}" ]; then
   if grep -q "网页内容读取规范" "${CLAUDE_MD}" 2>/dev/null; then
     echo "    ✓ 已配置网页内容读取规范，跳过"
   else
-    cat >> "${CLAUDE_MD}" << 'EOF'
+    if cat >> "${CLAUDE_MD}" << 'EOF'
 
 ## 网页内容读取规范
 当用户要求查看、读取、或获取网页的实际正文内容时（如"看一下这个页面""读取内容""获取文章"），必须优先使用 cloak-fetch skill，**禁止使用 WebFetch 或 curl 直接抓取**。原因：WebFetch 和 curl 不执行 JavaScript，无法渲染 SPA 页面（如支付宝/微信文档中心等）；也无法通过 WAF/CDN 反爬保护。
 WebFetch 仅在以下场景可使用：检查 meta 标签、验证链接是否有效、获取纯静态 API 响应。
 在使用 WebFetch 后若返回内容为空或极短（<500字符），必须立即用 cloak-fetch skill 重试。
 EOF
-    echo "    ✓ 已追加到 ${CLAUDE_MD}"
+    then
+      echo "    ✓ 已追加到 ${CLAUDE_MD}"
+    else
+      echo "    ✗ 写入 ${CLAUDE_MD} 失败，请手动添加"
+    fi
   fi
 else
   echo "    ! ~/.claude/CLAUDE.md 不存在，跳过"

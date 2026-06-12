@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fetch a Cloudflare-gated URL via CloakBrowser and print clean markdown to stdout.
+"""Fetch a URL via CloakBrowser and print clean markdown to stdout.
 
 Usage: cloak_fetch.py <url>
 
