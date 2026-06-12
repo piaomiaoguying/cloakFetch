@@ -1,140 +1,140 @@
-# cloakFetch — Web scraping fallback for AI Agents  🛡️
+# cloakFetch — AI Agent 网页抓取兜底  🛡️
 
-[English](README.md) · [中文](README_CN.md)
+[English](README_EN.md) · **中文**
 
-When `WebFetch` / `curl` hits a Cloudflare block (or any WAF), cloakFetch routes the URL through [CloakBrowser](https://github.com/CloakHQ/CloakBrowser) — a real Chromium with C++-level anti-bot patches — and returns clean markdown via [trafilatura](https://github.com/adbar/trafilatura). The agent never has to tell the user "this page is unfetchable."
+当 `WebFetch` / `curl` 遇到 Cloudflare（或任何 WAF）拦截时，cloakFetch 把 URL 路由到 [CloakBrowser](https://github.com/CloakHQ/CloakBrowser) —— 一个在 C++ 层打了反 bot 补丁的真实 Chromium —— 再通过 [trafilatura](https://github.com/adbar/trafilatura) 输出干净的 markdown。Agent 永远不必告诉用户"这页抓不下来"。
 
-Works with any SKILL.md-aware agent: Claude Code, Codex CLI, OpenCode, OpenClaw, SkillsMP.
+支持所有 SKILL.md 兼容的 agent：Claude Code、Codex CLI、OpenCode、OpenClaw、SkillsMP。
 
-## Why
+## 为什么需要
 
 ```
-WebFetch → science.org → 403 Forbidden
-         → nytimes.com → empty body
-         → datanexus.qq.com → SPA shell (no JS)
+WebFetch → science.org    → 403 Forbidden
+         → nytimes.com    → 空 body
+         → datanexus.qq.com → SPA 空壳（无 JS）
 ```
 
-`WebFetch`, `curl`, `requests` — none of these run JavaScript. CloakBrowser does. It's a patched Chromium that passes fingerprint checks, JS challenges, and passive bot detection. cloakFetch is the thin wrapper that wires it into your agent.
+`WebFetch`、`curl`、`requests` —— 它们都不执行 JavaScript。CloakBrowser 能。它是一个打过补丁的 Chromium，能通过指纹检测、JS 挑战和被动 bot 识别。cloakFetch 就是把它接入 agent 的那一层薄封装。
 
-## Install
+## 安装
 
-Drop the skill folder into your agent's skills directory:
+把技能目录放到 agent 的 skills 路径下：
 
-| Agent | Path |
+| Agent | 路径 |
 |---|---|
-| Claude Code (global) | `~/.claude/skills/cloak-fetch/` |
-| Claude Code (project) | `.claude/skills/cloak-fetch/` |
-| OpenClaw (global) | `~/.openclaw/skills/cloak-fetch/` |
-| OpenClaw (project) | `skills/cloak-fetch/` |
+| Claude Code（全局） | `~/.claude/skills/cloak-fetch/` |
+| Claude Code（项目） | `.claude/skills/cloak-fetch/` |
+| OpenClaw（全局） | `~/.openclaw/skills/cloak-fetch/` |
+| OpenClaw（项目） | `skills/cloak-fetch/` |
 | Codex CLI | `~/.codex/skills/cloak-fetch/` |
-| SkillsMP | Search `cloak-fetch` on [skillsmp.com](https://skillsmp.com) |
+| SkillsMP | 在 [skillsmp.com](https://skillsmp.com) 搜索 `cloak-fetch` |
 
-## Prerequisites
+## 前置条件
 
 ```bash
 pip install cloakbrowser trafilatura
 ```
 
-That's it. The skill auto-discovers the Python interpreter (see [Configuration](#configuration) below).
+就这些。技能会自动发现 Python 解释器（详见[配置](#配置)）。
 
-## Usage
-
-```bash
-<skill-dir>/cloak_fetch.sh "https://example.com"
-```
-
-Stdout gets clean markdown. Stderr gets progress. Exit 0 on success, non-zero on failure.
-
-**In your agent's CLAUDE.md** (optional but recommended):
-
-> When fetching page content, always use the cloak-fetch skill. Never use WebFetch or curl — they don't execute JavaScript and will return empty shells or 403 on any protected page.
-
-This avoids the wasted round-trip: WebFetch → 403 → then skill.
-
-## Configuration
-
-Three ways to tell the skill which Python has `cloakbrowser`, in priority order:
-
-### 1. Environment variable
+## 使用
 
 ```bash
-export CLOAKBROWSER_PYTHON=/path/to/your/venv/bin/python
+<skill目录>/cloak_fetch.sh "https://example.com"
 ```
 
-Highest priority. Put it in `~/.zshrc` or `~/.bashrc`.
+stdout 输出干净的 markdown，stderr 输出进度信息。成功退出码 0，失败非零。
 
-### 2. Config file (`cloak_fetch.conf`)
+**在 agent 的 CLAUDE.md 中**（可选但推荐）：
 
-Edit the file next to `cloak_fetch.sh`. One path per line, `#` for comments. Tried top-to-bottom:
+> 当需要获取网页内容时，必须使用 cloak-fetch 技能。禁止使用 WebFetch 或 curl —— 它们不执行 JavaScript，对任何受保护页面都只会返回空壳或 403。
+
+这样能省掉 WebFetch → 403 → 再重试的浪费。
+
+## 配置
+
+三种方式告诉技能哪个 Python 能 `import cloakbrowser`，按优先级从高到低：
+
+### 1. 环境变量
+
+```bash
+export CLOAKBROWSER_PYTHON=/你的/venv/bin/python
+```
+
+最高优先级。写入 `~/.zshrc` 或 `~/.bashrc`。
+
+### 2. 配置文件（`cloak_fetch.conf`）
+
+编辑 `cloak_fetch.sh` 旁边的这个文件。一行一个路径，`#` 开头为注释。从上到下尝试：
 
 ```ini
-# my CloakBrowser venv
+# 我的 CloakBrowser venv
 /home/alice/CloakBrowser/.venv/bin/python
 /opt/CloakBrowser/.venv/bin/python
 ```
 
-### 3. PATH fallback
+### 3. PATH 兜底
 
-If neither is set, the skill runs `python3` from PATH. Works when `cloakbrowser` is `pip install`'d into the system Python.
+以上都不设置时，直接使用 PATH 上的 `python3`。当你通过 `pip install cloakbrowser` 安装到系统 Python 时，零配置即可用。
 
-## Tuning
+## 调优
 
-Edit `cloak_fetch.py` directly:
+编辑 `cloak_fetch.py`：
 
-| Knob | Default | What it does |
+| 参数 | 默认值 | 作用 |
 |---|---|---|
-| `launch(headless=)` | `True` | Set to `False` to see the browser window (debug) |
-| `page.goto(… timeout=)` | `90000` | Page load timeout in ms |
-| `page.wait_for_selector(… timeout=)` | `15000` | Max wait for SPA content container |
-| `time.sleep(2)` | 2 s | Extra settle for late-loading JS |
-| Selector list | `main, article, .article__body, .core-container, .pb-page-body` | Add site-specific selectors for faster detection |
+| `launch(headless=)` | `True` | 改为 `False` 可看到浏览器窗口（调试用） |
+| `page.goto(… timeout=)` | `90000` | 页面加载超时（毫秒） |
+| `page.wait_for_selector(… timeout=)` | `15000` | SPA 内容容器最长等待时间 |
+| `time.sleep(2)` | 2 秒 | JS 延迟加载的额外缓冲 |
+| 选择器列表 | `main, article, .article__body, .core-container, .pb-page-body` | 按需添加站点特定选择器以加速检测 |
 
-## Architecture
+## 架构
 
 ```
-cloak_fetch.sh <url>                 ← one command
+cloak_fetch.sh <url>                 ← 一条命令
    │
-   ├─ 1. Find Python (env var → conf → PATH)
-   ├─ 2. arch -arm64 (macOS only, prevents x86_64 Rosetta mismatch)
+   ├─ 1. 发现 Python（环境变量 → conf → PATH）
+   ├─ 2. arch -arm64（仅 macOS，防止 Rosetta x86_64 架构错配）
    └─ 3. exec cloak_fetch.py <url>
          │
-         ├─ launch(headless=True)    ← CloakBrowser via Playwright-compatible API
+         ├─ launch(headless=True)    ← CloakBrowser，Playwright 兼容 API
          ├─ page.goto(url)
-         ├─ Poll for real title      ← "Just a moment…" → wait for CF to clear
-         ├─ wait_for_selector()      ← SPA content rendered?
-         ├─ time.sleep(2)            ← late JS settle
-         ├─ page.evaluate(outerHTML) ← grab full DOM
-         └─ trafilatura.extract()    ← HTML → clean markdown
+         ├─ 轮询真实标题              ← "Just a moment…" → 等 CF 放行
+         ├─ wait_for_selector()      ← SPA 内容渲染完毕？
+         ├─ time.sleep(2)            ← 晚加载 JS 缓冲
+         ├─ page.evaluate(outerHTML) ← 获取完整 DOM
+         └─ trafilatura.extract()    ← HTML → 干净 markdown
 ```
 
-## Behaviour
+## 行为
 
-- **Headless** — no browser window.
-- **Latency** — ~20–40 s (browser launch + render + settle).
-- **Output** — trafilatura markdown: headings, lists, links, code blocks preserved. Ads, nav, cookie banners stripped.
-- **Fallback** — if trafilatura finds no main content, raw HTML is emitted so the agent still has something.
-- **Fail-closed** — exits non-zero with a clear stderr message if anything fails. Never silently returns nothing.
+- **无头运行** — 无浏览器窗口。
+- **延迟** — ~20–40 秒（浏览器启动 + 渲染 + 缓冲）。
+- **输出** — trafilatura markdown：保留标题、列表、链接、代码块。去掉广告、导航、cookie 横幅。
+- **兜底** — 如果 trafilatura 找不到正文，输出原始 HTML，确保 agent 至少有点东西可读。
+- **失败即报** — 任何环节出错都以非零码退出，stderr 输出清晰错误信息。绝不静默返回空内容。
 
-## Limitations
+## 局限
 
-- **Interactive captchas** (Turnstile checkbox, reCAPTCHA image grid, hCaptcha slider) need a human or paid solver. CloakBrowser passes passive fingerprint checks, not interactive challenges.
-- **Headless mode** defeats most protections, but the hardest CF challenges may need `headless=False`.
-- **Reactive** — the agent must remember to use this skill. A CLAUDE.md rule (see [Usage](#usage)) makes it proactive.
-- **Cross-platform** — macOS (ARM/Intel), Linux supported. The `arch -arm64` wrapper only activates on macOS ARM; Linux skips it cleanly.
+- **交互式验证码**（Turnstile 复选框、reCAPTCHA 图片网格、hCaptcha 滑块）需要人工或付费打码服务。CloakBrowser 通过被动指纹检测，但不解决交互式挑战。
+- **无头模式**能应付大多数保护，但最强 CF 挑战可能需要 `headless=False`。
+- **被动触发** — agent 必须记得用这个技能。在 CLAUDE.md 加规则（见[使用](#使用)）可变为主动。
+- **跨平台** — 支持 macOS（ARM/Intel）、Linux。`arch -arm64` 仅在 macOS ARM 下启用，Linux 直接跳过。
 
-## Repo layout
+## 仓库结构
 
 ```
 cloakFetch/
 ├── skills/cloak-fetch/
-│   ├── SKILL.md              ← Agent reads this — trigger heuristics, vendor signatures
-│   ├── cloak_fetch.sh        ← Entry point: find Python, cross-platform exec
-│   ├── cloak_fetch.py        ← Browser launch + trafilatura extraction
-│   └── cloak_fetch.conf      ← User-custom Python paths (optional)
+│   ├── SKILL.md              ← Agent 读取 — 触发启发式、厂商特征
+│   ├── cloak_fetch.sh        ← 入口：发现 Python、跨平台 exec
+│   ├── cloak_fetch.py        ← 浏览器启动 + trafilatura 提取
+│   └── cloak_fetch.conf      ← 用户自定义 Python 路径（可选）
 ├── LICENSE
 ├── .gitignore
 ├── README.md
-└── README_CN.md
+└── README_EN.md
 ```
 
 ## 📄 License
