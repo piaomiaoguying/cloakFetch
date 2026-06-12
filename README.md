@@ -1,4 +1,4 @@
-# cloakFetch — AI Agent 网页抓取兜底  🛡️
+# cloakFetch — AI Agent 网页抓取  🛡️
 
 [English](README_EN.md) · **中文**
 
@@ -73,7 +73,7 @@ export CLOAKBROWSER_PYTHON=/你的/venv/bin/python
 /opt/CloakBrowser/.venv/bin/python
 ```
 
-### 3. PATH 兜底
+### 3. PATH 自动发现
 
 以上都不设置时，直接使用 PATH 上的 `python3`。当你通过 `pip install cloakbrowser` 安装到系统 Python 时，零配置即可用。
 
@@ -112,7 +112,7 @@ cloak_fetch.sh <url>                 ← 一条命令
 - **无头运行** — 无浏览器窗口。
 - **延迟** — ~20–40 秒（浏览器启动 + 渲染 + 缓冲）。
 - **输出** — trafilatura markdown：保留标题、列表、链接、代码块。去掉广告、导航、cookie 横幅。
-- **兜底** — 如果 trafilatura 找不到正文，输出原始 HTML，确保 agent 至少有点东西可读。
+- **备用输出** — 如果 trafilatura 找不到正文，输出原始 HTML，确保 agent 至少有点东西可读。
 - **失败即报** — 任何环节出错都以非零码退出，stderr 输出清晰错误信息。绝不静默返回空内容。
 
 ## 局限

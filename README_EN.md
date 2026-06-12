@@ -1,4 +1,4 @@
-# cloakFetch — Web scraping fallback for AI Agents  🛡️
+# cloakFetch — Web scraping for AI Agents  🛡️
 
 **English** · [中文](README.md)
 
@@ -73,7 +73,7 @@ Edit the file next to `cloak_fetch.sh`. One path per line, `#` for comments. Tri
 /opt/CloakBrowser/.venv/bin/python
 ```
 
-### 3. PATH fallback
+### 3. PATH auto-discovery
 
 If neither is set, the skill runs `python3` from PATH. Works when `cloakbrowser` is `pip install`'d into the system Python.
 
@@ -112,7 +112,7 @@ cloak_fetch.sh <url>                 ← one command
 - **Headless** — no browser window.
 - **Latency** — ~20–40 s (browser launch + render + settle).
 - **Output** — trafilatura markdown: headings, lists, links, code blocks preserved. Ads, nav, cookie banners stripped.
-- **Fallback** — if trafilatura finds no main content, raw HTML is emitted so the agent still has something.
+- **Backup** — if trafilatura finds no main content, raw HTML is emitted so the agent still has something.
 - **Fail-closed** — exits non-zero with a clear stderr message if anything fails. Never silently returns nothing.
 
 ## Limitations
