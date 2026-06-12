@@ -1,14 +1,6 @@
 # cloakFetch — Web scraping fallback for AI Agents  🛡️
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![GitHub stars](https://img.shields.io/github/stars/Agents365-ai/cloakFetch?style=flat&logo=github)](https://github.com/Agents365-ai/cloakFetch/stargazers)
-[![GitHub forks](https://img.shields.io/github/forks/Agents365-ai/cloakFetch?style=flat&logo=github)](https://github.com/Agents365-ai/cloakFetch/network/members)
-[![Agent Skills](https://img.shields.io/badge/Agent%20Skills-compatible-2ea44f)](https://agentskills.io)
-[![Discord](https://img.shields.io/badge/Discord-Join-5865F2?logo=discord&logoColor=white)](https://discord.gg/79JF5Atuk)
-
-**English** · [中文](README_CN.md)
-
-External refs: [CloakBrowser](https://github.com/CloakHQ/CloakBrowser) · [trafilatura](https://github.com/adbar/trafilatura)
+[English](README.md) · [中文](README_CN.md)
 
 When `WebFetch` / `curl` hits a Cloudflare block (or any WAF), cloakFetch routes the URL through [CloakBrowser](https://github.com/CloakHQ/CloakBrowser) — a real Chromium with C++-level anti-bot patches — and returns clean markdown via [trafilatura](https://github.com/adbar/trafilatura). The agent never has to tell the user "this page is unfetchable."
 
@@ -144,47 +136,6 @@ cloakFetch/
 ├── README.md
 └── README_CN.md
 ```
-
-## 💬 Community
-
-- **Discord:** https://discord.gg/79JF5Atuk
-- **WeChat:** scan the QR code below
-
-<p align="center">
-  <img src="https://raw.githubusercontent.com/Agents365-ai/images_payment/main/qrcode/agents365ai_wechat_1.png" width="200" alt="WeChat Community Group">
-</p>
-
-## ❤️ Support
-
-If cloakFetch saves you from one more "HTTP 403 Forbidden", consider supporting the author:
-
-<table>
-  <tr>
-    <td align="center">
-      <img src="https://raw.githubusercontent.com/Agents365-ai/images_payment/main/qrcode/wechat-pay.png" width="180" alt="WeChat Pay">
-      <br><b>WeChat Pay</b>
-    </td>
-    <td align="center">
-      <img src="https://raw.githubusercontent.com/Agents365-ai/images_payment/main/qrcode/alipay.png" width="180" alt="Alipay">
-      <br><b>Alipay</b>
-    </td>
-    <td align="center">
-      <img src="https://raw.githubusercontent.com/Agents365-ai/images_payment/main/qrcode/buymeacoffee.png" width="180" alt="Buy Me a Coffee">
-      <br><b>Buy Me a Coffee</b>
-    </td>
-    <td align="center">
-      <img src="https://raw.githubusercontent.com/Agents365-ai/images_payment/main/awarding/award.gif" width="180" alt="Reward">
-      <br><b>Reward</b>
-    </td>
-  </tr>
-</table>
-
-## 👤 Author
-
-**Agents365-ai**
-
-- GitHub: https://github.com/Agents365-ai
-- Bilibili: https://space.bilibili.com/441831884
 
 ## 📄 License
 

@@ -1,14 +1,6 @@
 # cloakFetch — AI Agent 网页抓取兜底  🛡️
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![GitHub stars](https://img.shields.io/github/stars/Agents365-ai/cloakFetch?style=flat&logo=github)](https://github.com/Agents365-ai/cloakFetch/stargazers)
-[![GitHub forks](https://img.shields.io/github/forks/Agents365-ai/cloakFetch?style=flat&logo=github)](https://github.com/Agents365-ai/cloakFetch/network/members)
-[![Agent Skills](https://img.shields.io/badge/Agent%20Skills-compatible-2ea44f)](https://agentskills.io)
-[![Discord](https://img.shields.io/badge/Discord-加入-5865F2?logo=discord&logoColor=white)](https://discord.gg/79JF5Atuk)
-
 [English](README.md) · **中文**
-
-外部参考：[CloakBrowser](https://github.com/CloakHQ/CloakBrowser) · [trafilatura](https://github.com/adbar/trafilatura)
 
 当 `WebFetch` / `curl` 遇到 Cloudflare（或任何 WAF）拦截时，cloakFetch 把 URL 路由到 [CloakBrowser](https://github.com/CloakHQ/CloakBrowser) —— 一个在 C++ 层打了反 bot 补丁的真实 Chromium —— 再通过 [trafilatura](https://github.com/adbar/trafilatura) 输出干净的 markdown。Agent 永远不必告诉用户"这页抓不下来"。
 
@@ -144,47 +136,6 @@ cloakFetch/
 ├── README.md
 └── README_CN.md
 ```
-
-## 💬 社区
-
-- **Discord:** https://discord.gg/79JF5Atuk
-- **微信:** 扫描下方二维码
-
-<p align="center">
-  <img src="https://raw.githubusercontent.com/Agents365-ai/images_payment/main/qrcode/agents365ai_wechat_1.png" width="200" alt="微信交流群">
-</p>
-
-## ❤️ 支持
-
-如果 cloakFetch 帮你少看了一次 "HTTP 403 Forbidden"，欢迎打赏支持作者：
-
-<table>
-  <tr>
-    <td align="center">
-      <img src="https://raw.githubusercontent.com/Agents365-ai/images_payment/main/qrcode/wechat-pay.png" width="180" alt="微信支付">
-      <br><b>微信支付</b>
-    </td>
-    <td align="center">
-      <img src="https://raw.githubusercontent.com/Agents365-ai/images_payment/main/qrcode/alipay.png" width="180" alt="支付宝">
-      <br><b>支付宝</b>
-    </td>
-    <td align="center">
-      <img src="https://raw.githubusercontent.com/Agents365-ai/images_payment/main/qrcode/buymeacoffee.png" width="180" alt="Buy Me a Coffee">
-      <br><b>Buy Me a Coffee</b>
-    </td>
-    <td align="center">
-      <img src="https://raw.githubusercontent.com/Agents365-ai/images_payment/main/awarding/award.gif" width="180" alt="打赏">
-      <br><b>打赏</b>
-    </td>
-  </tr>
-</table>
-
-## 👤 作者
-
-**Agents365-ai**
-
-- GitHub: https://github.com/Agents365-ai
-- Bilibili: https://space.bilibili.com/441831884
 
 ## 📄 License
 
