@@ -27,10 +27,7 @@ The script will ask where to install the browser (~300MB Chromium):
 
 Everything else is automatic: clone skill files → pip install deps → copy to `~/.claude/skills/cloak-fetch/` → configure Python → append CLAUDE.md rule.
 
-> **Network**: `git clone` and `pip3 install` may be slow from some regions. Set a proxy first if needed:
-> ```bash
-> export https_proxy=http://127.0.0.1:7890 http_proxy=http://127.0.0.1:7890
-> ```
+> **Network**: `git clone` and `pip3 install` may be slow from some regions — set a proxy first if needed.
 
 ## Limitations
 
