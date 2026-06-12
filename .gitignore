@@ -2,3 +2,4 @@
 __pycache__/
 *.pyc
 .venv/
+.trae/rules/git-commit-message.md

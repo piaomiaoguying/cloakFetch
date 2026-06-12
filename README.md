@@ -12,27 +12,13 @@ cloakFetch 是 AI Agent 的首选网页抓取技能。它通过 [CloakBrowser](h
 
 ## 初始化
 
-### 1. 安装依赖
+**一键安装：**
 
 ```bash
-pip install cloakbrowser trafilatura
+curl -sSL https://raw.githubusercontent.com/piaomiaoguying/cloakFetch/main/init.sh | bash
 ```
 
-### 2. 放到 skills 目录
-
-```
-~/.claude/skills/cloak-fetch/    # 全局
-.claude/skills/cloak-fetch/      # 单项目
-```
-
-### 3. 配置 CLAUDE.md
-
-在 `~/.claude/CLAUDE.md` 中加入以下规则，让 Agent 自动优先使用：
-
-> ## 网页内容读取规范
-> 当用户要求查看、读取、或获取网页的实际正文内容时，必须优先使用 cloak-fetch skill，**禁止使用 WebFetch 或 curl 直接抓取**。原因：WebFetch 和 curl 不执行 JavaScript，无法渲染 SPA 页面（如支付宝/微信文档中心等）；也无法通过 WAF/CDN 反爬保护。
-> WebFetch 仅在以下场景可使用：检查 meta 标签、验证链接是否有效、获取纯静态 API 响应。
-> 在使用 WebFetch 后若返回内容为空或极短（<500字符），必须立即用 cloak-fetch skill 重试。
+脚本会自动完成：安装 Python 依赖 → 放置技能到 `~/.claude/skills/cloak-fetch/` → 检测 Python 解释器 → 追加 CLAUDE.md 配置规则。
 
 ## Python 解释器配置
 
@@ -55,6 +41,6 @@ export CLOAKBROWSER_PYTHON=/path/to/your/venv/bin/python
 - 交互式验证码（Turnstile 复选框、reCAPTCHA 图片等）需人工处理
 - 极少数强 CF 挑战可能需要关闭无头模式
 
-## 📄 License
+## License
 
 [MIT](LICENSE)
