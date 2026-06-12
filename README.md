@@ -20,22 +20,6 @@ curl -sSL https://raw.githubusercontent.com/piaomiaoguying/cloakFetch/main/init.
 
 脚本会自动完成：安装 Python 依赖 → 放置技能到 `~/.claude/skills/cloak-fetch/` → 检测 Python 解释器 → 追加 CLAUDE.md 配置规则。
 
-## Python 解释器配置
-
-技能需要知道哪个 Python 可 `import cloakbrowser`，三种方式（按优先级）：
-
-**环境变量**（推荐）：
-```bash
-export CLOAKBROWSER_PYTHON=/path/to/your/venv/bin/python
-```
-
-**配置文件**（`cloak_fetch.conf`），一行一个路径：
-```ini
-/home/alice/CloakBrowser/.venv/bin/python
-```
-
-**自动发现**：以上都不设时直接用 PATH 中的 `python3`。
-
 ## 局限
 
 - 交互式验证码（Turnstile 复选框、reCAPTCHA 图片等）需人工处理

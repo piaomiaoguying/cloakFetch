@@ -20,22 +20,6 @@ curl -sSL https://raw.githubusercontent.com/piaomiaoguying/cloakFetch/main/init.
 
 The script handles everything: pip install dependencies → copy skill to `~/.claude/skills/cloak-fetch/` → detect Python interpreter → append the CLAUDE.md rule.
 
-## Python Interpreter
-
-The skill needs a Python that can `import cloakbrowser`. Three options (by priority):
-
-**Environment variable** (recommended):
-```bash
-export CLOAKBROWSER_PYTHON=/path/to/your/venv/bin/python
-```
-
-**Config file** (`cloak_fetch.conf`), one path per line:
-```ini
-/home/alice/CloakBrowser/.venv/bin/python
-```
-
-**Auto-discovery**: falls back to `python3` from PATH.
-
 ## Limitations
 
 - Interactive captchas (Turnstile checkbox, reCAPTCHA grids, etc.) require human intervention
