@@ -2,19 +2,23 @@
 # cloak-fetch wrapper: locate a Python with cloakbrowser, fetch the URL
 # headlessly via CloakBrowser, and emit clean markdown (trafilatura).
 #
-# Usage: cloak_fetch.sh <url>
+# Usage: cloak_fetch.sh <url> [--links]
 # Stdout: clean markdown extracted from the page.
 # Stderr: progress + error messages.
 # Exit:   0 on success, non-zero on any failure.
+# Options:
+#   --links  Append a link-list section extracted from the rendered DOM.
+#            Helps when trafilatura drops <a href> on SPA pages.
 
 set -uo pipefail
 
-if [ $# -ne 1 ]; then
-  echo "usage: $(basename "$0") <url>" >&2
+if [ $# -lt 1 ] || [ $# -gt 2 ]; then
+  echo "usage: $(basename "$0") <url> [--links]" >&2
   exit 2
 fi
 
 URL="$1"
+LINK_FLAG="${2:-}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # ── Find a Python interpreter that can import cloakbrowser ──────────────
@@ -63,7 +67,7 @@ fi
 # a no-op). We probe whether it works rather than guessing from `uname -m`.
 # Linux and Intel Macs skip this entirely.
 if [[ "$(uname -s)" == "Darwin" ]] && arch -arm64 true 2>/dev/null; then
-  exec arch -arm64 "$PY" "$SCRIPT_DIR/cloak_fetch.py" "$URL"
+  exec arch -arm64 "$PY" "$SCRIPT_DIR/cloak_fetch.py" "$URL" ${LINK_FLAG:+"$LINK_FLAG"}
 else
-  exec "$PY" "$SCRIPT_DIR/cloak_fetch.py" "$URL"
+  exec "$PY" "$SCRIPT_DIR/cloak_fetch.py" "$URL" ${LINK_FLAG:+"$LINK_FLAG"}
 fi

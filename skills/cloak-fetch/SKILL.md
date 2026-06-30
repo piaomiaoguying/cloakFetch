@@ -57,14 +57,26 @@ Also trigger preemptively for domains known to live behind bot protection: publi
 ## Invocation
 
 ```bash
-<SKILL_DIR>/cloak_fetch.sh "<URL>"
+<SKILL_DIR>/cloak_fetch.sh "<URL>" [--links]
 ```
 
-## Behavior
+### `--links` flag
 
-- **Latency:** ~20–40 s.
-- **Output:** clean markdown via trafilatura (headings, lists, links, code blocks preserved; nav/ads/cookie banners stripped). Falls back to raw HTML if trafilatura can't isolate a main content node.
-- **Failure:** exits non-zero with message on stderr. Report failure honestly — don't fabricate content.
+When `--links` is used, the output appends a `## 页面链接` section at the end listing all links found in the rendered DOM. This is useful when trafilatura drops `<a href>` attributes from SPA pages (e.g. React Router links, `onClick` navigation, `data-href` attributes on feishu/larkoffice doc pages).
+
+The link extractor uses three strategies:
+1. Standard `<a href>` tags
+2. `data-href`, `data-url`, `data-link` attributes (common in React components)
+3. `onclick` navigation patterns (`window.open`, `location.href`)
+
+Links that appear in the content container text are ranked to the top.
+
+**Use `--links` whenever:**
+- The page text mentions a link but the markdown output doesn't include its URL
+- You need to find specific doc/form/survey links on SPA documentation sites
+- trafilatura output is clean text but you suspect important navigation links were stripped
+
+**When trafilatura returns empty or too-short markdown but cloaks outputs container text**, re-run with `--links` to capture all rendered links alongside the text.
 
 ## Configuration
 

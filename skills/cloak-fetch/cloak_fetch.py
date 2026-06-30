@@ -1,11 +1,16 @@
 #!/usr/bin/env python3
 """Fetch a URL via CloakBrowser and print clean markdown to stdout.
 
-Usage: cloak_fetch.py <url>
+Usage: cloak_fetch.py <url> [--links]
 
 Stdout: clean markdown extracted from the rendered page via trafilatura.
 Stderr: progress messages (safe to /dev/null).
 Exit 0 on success, 1 on failure.
+
+Options:
+  --links    Append a section at the end listing all links found in the
+             rendered DOM. Useful when trafilatura drops href attributes
+             from SPA pages (React links, onClick navigation, etc.).
 
 SPA-aware extraction strategy:
   1. goto + extra settle time for SPA routers
@@ -15,6 +20,8 @@ SPA-aware extraction strategy:
      reveal the content panel
   5. Prefer well-known content containers; fall back to body.outerHTML
   6. trafilatura pass with container-text / innerText as fallback
+  7. If --links, extract all rendered <a href> + data-href/data-url/data-link
+     + onclick navigation patterns and append them
 """
 
 import re
@@ -22,11 +29,12 @@ import sys
 import time
 from urllib.parse import parse_qs, urlparse
 
-if len(sys.argv) != 2:
-    print("usage: cloak_fetch.py <url>", file=sys.stderr)
+if len(sys.argv) != 2 and not (len(sys.argv) == 3 and sys.argv[2] == "--links"):
+    print("usage: cloak_fetch.py <url> [--links]", file=sys.stderr)
     sys.exit(1)
 
 url = sys.argv[1]
+extract_links = len(sys.argv) == 3 and sys.argv[2] == "--links"
 
 try:
     from cloakbrowser import launch
@@ -160,7 +168,90 @@ def _get_top_nav(page) -> list[str]:
     }""")
 
 
-def _click_nav(page, label: str) -> bool:
+def _extract_all_links(page, container_text: str | None = None) -> list[dict]:
+    """Extract all visible links from the rendered DOM.
+
+    Returns a list of {text, href} dicts, deduplicated by href.
+    Links that appear in the content container (if provided) are ranked higher.
+    Uses multiple strategies because SPA pages often use non-standard link
+    patterns (React Router, onClick navigation, etc.).
+    """
+    result = page.evaluate("""() => {
+        const seen = new Set();
+        const links = [];
+        // Strategy 1: Standard <a href> tags
+        for (const a of document.querySelectorAll('a[href]')) {
+            const href = a.href.trim();
+            if (!href || href.startsWith('javascript:') || href === '#') continue;
+            if (seen.has(href)) continue;
+            seen.add(href);
+            links.push({
+                text: (a.innerText || a.textContent || '').trim().substring(0, 200),
+                href: href
+            });
+        }
+        // Strategy 2: elements with data-href, data-url, data-link
+        for (const el of document.querySelectorAll('[data-href], [data-url], [data-link]')) {
+            const href = (el.getAttribute('data-href') || el.getAttribute('data-url') || el.getAttribute('data-link') || '').trim();
+            if (!href || seen.has(href)) continue;
+            seen.add(href);
+            links.push({
+                text: (el.innerText || el.textContent || '').trim().substring(0, 200),
+                href: href
+            });
+        }
+        // Strategy 3: onclick navigation patterns
+        for (const el of document.querySelectorAll('[onclick]')) {
+            const onclick = (el.getAttribute('onclick') || '');
+            const match = onclick.match(/(?:window\\.open|location\\.href|location\\.replace)\\s*\\('"'"'([^'"'"']+)'"'"'\\)/);
+            if (match) {
+                const href = match[1];
+                if (!href || seen.has(href)) continue;
+                seen.add(href);
+                links.push({
+                    text: (el.innerText || '').trim().substring(0, 200),
+                    href: href
+                });
+            }
+        }
+        return links;
+    }""")
+
+    # If we have container_text, boost links whose text appears in it
+    if container_text:
+        in_content = []
+        other = []
+        for link in result:
+            text_fragment = link.get("text", "")
+            if len(text_fragment) >= 4 and text_fragment in container_text:
+                in_content.append(link)
+            elif len(text_fragment) >= 2 and any(w in container_text for w in text_fragment.split()[:3]):
+                in_content.append(link)
+            else:
+                other.append(link)
+        result = in_content + other
+
+    return result
+
+
+def _links_to_markdown(links: list[dict]) -> str:
+    """Format extracted links as a markdown section."""
+    if not links:
+        return ""
+    lines = ["\n\n---\n## 页面链接\n"]
+    seen = set()
+    for link in links:
+        href = link.get("href", "")
+        if href in seen:
+            continue
+        seen.add(href)
+        text = link.get("text", "") or href
+        # Clean up text: collapse whitespace
+        text = " ".join(text.split())
+        if len(text) > 80:
+            text = text[:77] + "..."
+        lines.append(f"- [{text}]({href})")
+    return "\n".join(lines) + "\n"
     """Click a top-level nav item by exact visible text."""
     return page.evaluate(f"""() => {{
         const sel = '.one-nav-item, [class*="nav-item"], [class*="menu-item"], ' +
@@ -366,6 +457,17 @@ try:
     else:
         sys.stdout.write(md)
         print(f"[cloak] done, {md_len} bytes markdown", file=sys.stderr)
+
+    # ── --links: append extracted links ─────────────────────────────────
+    if extract_links:
+        all_links = _extract_all_links(page, container_text)
+        links_md = _links_to_markdown(all_links)
+        link_count = len([l for l in all_links if l.get("href")])
+        if links_md:
+            print(f"[cloak] appended {link_count} links", file=sys.stderr)
+            sys.stdout.write(links_md)
+        else:
+            print("[cloak] no links found in DOM", file=sys.stderr)
 
     browser.close()
 
