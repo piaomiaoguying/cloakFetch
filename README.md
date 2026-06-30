@@ -29,6 +29,28 @@ curl -sSL https://raw.githubusercontent.com/piaomiaoguying/cloakFetch/main/init.
 
 > **网络问题**：`git clone` 和 `pip3 install` 在大陆网络可能较慢或超时，可先设置代理后执行。
 
+## 使用
+
+```bash
+# 基础用法：读取网页正文
+cloak_fetch.sh "https://example.com"
+
+# 提取页面中所有链接（用于 SPA 页面丢失 href 的场景）
+cloak_fetch.sh "https://example.com" --links
+```
+
+### `--links` 参数
+
+SPA 页面（React/Vue 渲染）中，trafilatura 提取正文时可能丢失 `<a>` 标签的 `href` 属性。加上 `--links` 后，输出末尾会追加一个「页面链接」节，列出渲染 DOM 中所有链接。支持三种提取策略：
+
+1. 标准 `<a href>` 标签
+2. `data-href`、`data-url`、`data-link` 属性
+3. `onclick` 中的 `window.open` / `location.href` 跳转
+
+正文中出现的链接会自动排到前面。
+
+**适用场景**：飞书文档表单链接、SPA 文档站导航链接、需精准获取目标 URL 等。
+
 ## 局限
 
 - 交互式验证码（Turnstile 复选框、reCAPTCHA 图片等）需人工处理

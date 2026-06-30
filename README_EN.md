@@ -29,6 +29,28 @@ Everything else is automatic: clone skill files → pip install deps → copy to
 
 > **Network**: `git clone` and `pip3 install` may be slow from some regions — set a proxy first if needed.
 
+## Usage
+
+```bash
+# Basic: extract page content
+cloak_fetch.sh "https://example.com"
+
+# Extract all rendered links (for SPA pages where href is dropped)
+cloak_fetch.sh "https://example.com" --links
+```
+
+### `--links` flag
+
+On SPA pages (React/Vue), trafilatura may drop `<a>` href attributes during extraction. With `--links`, the output includes a "Page Links" section listing all links from the rendered DOM. Three extraction strategies:
+
+1. Standard `<a href>` tags
+2. `data-href`, `data-url`, `data-link` attributes
+3. `onclick` with `window.open` / `location.href` navigation
+
+Links found in the content text are ranked to the top.
+
+**Use cases**: Feishu form links, SPA doc site navigation, extracting target URLs from docs, etc.
+
 ## Limitations
 
 - Interactive captchas (Turnstile checkbox, reCAPTCHA grids, etc.) require human intervention
